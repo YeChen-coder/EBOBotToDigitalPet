@@ -27,4 +27,4 @@ GitHub 上别人已经做过一个逆向开源项目(https://github.com/Playcolo
 
 反正 ChatGPT 跟我说 Home Assistant 能连纯蓝牙，但讲道理，前面我搞逆向的那些日常电子小垃圾，我还没放到 Home Assistant 上连过。这事先以后再说吧，那些设备目的都很单一、很 specific，其实用不着放到 unified 平台上来。最主要是现在懒得像条狗，而且我亲爱的 Codex 那个 5 小时的 usage limit 限制还没解，还得等着。
 
-先到这儿，待会儿有空我再回来说哈
+然后以及还有一件事，就是他那边如果要用到 Large Language Model 的能力，那就是得去填 API Key。OpenAI 那边的 API Key 必须得充钱。你要是账户上的 Credit 是个零，那他那个 API Key 你哪怕是现申请的，他也绝对会提示连接不上什么的，就这样.
