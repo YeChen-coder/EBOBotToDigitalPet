@@ -14,6 +14,15 @@
 
 其实里面最重要的东西就是 Docker。
 
+先说 Docker：Dockerfile 是用来 build image 的，compose.yaml 是用来 create container 的，这两个还是挺不一样的。
+
+先说 Dockerfile，它里面可以写两种命令：
+
+1. RUN：是在 build image 的时候就自己跑的。
+2. CMD：这个命令是被包在 build 出来的 image 里面，只有通过这个 image create container 的时候，container 才会让它自动跑。它们有这么一层递进的关系。
+
+其实就跟所有的 service 差不多，不管你用什么程序写，container 放在那儿，总不可能作为一个死包（只带着文件、进程和网络）待着，得让它动起来。怎么让它动起来呢？它一定得有一条启动命令。对于 Python 来说，不管是 main.py 还是 app.py 都不重要，反正必须得有一个东西让它跑起来，而这个通常都是写在 Dockerfile 里面的
+
 现在的 Docker 一共分三个 container（容器），底下肯定对应三个 image（镜像），这个没什么好说的。
 
 这三个容器是作为一个 compose 部署的。之所以用 compose，是因为它们内部是有连接的，需要一个共同的内部网络来方便进行内部通信。此外，这三个 container 的重启策略（restart policy）都是 unless-stopped。
@@ -21,6 +30,12 @@
 另外还有一个比较基本的东西：任何一个 container 自己都是一个独立的小包，里面包含了自己的文件、进程和网络。但是一旦 container 被销毁，里面的数据也就没了。
 
 如果有一些内容确实需要持久化保存，就必须在宿主机上找一个位置，然后在 Docker 里面配置挂载，把宿主机上的这个位置映射成 container 内部写入文件的路径。
+
+还有件事：那个 .env 肯定不在 Docker 里面，必须在 Docker 外面。不然每次改它我还得进到容器里面直接改，那实在太费劲了，所以它一定是在外面。
+
+而且每次对 .env 做了更改之后，就必须重新 recreate 这个 container 了。
+
+这好像是跟文件挂载有关系，不过具体怎么回事我给忘了。
 
 接下来往细了讲：
 
@@ -94,7 +109,7 @@
 
 同样是声音的问题，针对噪音大家注意一下：
 
-OpenAI 服务器那边对噪音的处理，默认的 noise reduction 是不开的（none）。我后来把它改成了 far field。
+OpenAI 服务器那边对噪音的处理，默认的 noise reduction 是不开的（null）。我后来把它改成了 far field。
 
 虽然我家其实不算大，但实际使用状态是：家里人真正要跟它说话时，都会靠近它（近场声音）；相对离它更远的声音，肯定不是跟它说话的场景。我是基于这个来做判断的。
 
