@@ -33,7 +33,12 @@
 
 然后去用来记录日志，记录输入输出的一个日志：输入是 user，输出是 assistant。
 
-这两个日志文件肯定得在我宿主机上待着。因为我这边其实 container 重建挺频繁的，你这一重建，它里边的东西都没了，我就很难再去 debug 了。
+这两个日志文件肯定得在我宿主机上待着。因为我这边其实 container recreate挺频繁的，你这一重建，它里边的东西都没了，我就很难再去 debug 了。(备注一下：
+
+1. 通过 Dockerfile 生成 Image 的过程叫 rebuild
+2. 通过 Image 再去生成 Container 的过程叫 recreate
+
+这两个概念还是得分清楚的)
 
 还有件事：那个 .env 肯定不在 Docker 里面，必须在 Docker 外面。不然每次改它我还得进到容器里面直接改，那实在太费劲了，所以它一定是在外面。
 
@@ -41,9 +46,14 @@
 
 其他两位（Home Assistant 和 ebo-engine）跟 .env 里的 prompt 没关系。我最常出现的情况就是改了 .env 里面的 prompt，也就是里面 role 的 prompt。
 
-所以一般这种情况下，只需要重新生成 runtime assistant 这个 container 就可以了。
+所以一般这种情况下，只需要recreate runtime assistant 这个 container 就可以了。
 
-这好像是跟文件挂载有关系，不过具体怎么回事我给忘了。
+还有一个事情：之所以改了 .env 之后 container 必须重建，是因为 Docker 在创建 container 的那一刻就会读取 .env，把它转换成 container 自己的一组环境变量。
+
+在创建 container 的那一刻，它就直接把原本 .env 里的配置写进了 container 里，作为一个 fixed 的环境变量。当 container 创建完成之后，它里面保存的就只有当时那个时间点的环境变量值。(写的是env_file:  - .env)
+
+这个时候，宿主机上的 .env 文件本身和 container 里的环境变量就不再实时连接了（这跟把 container 内部生成的日志文件映射到宿主机本地路径是不一样的，那种是实时更新的，但 .env 不是，.env 是断开的； 
+但是如果把 .env 文件也照着 log 文件那样去 mount， 即为 volumes:  - ./.env:/app/.env 且代码里load_dotenv("/app/.env") ，其实像这么写也行。在那种情况下，.env 本身已经是 bind mount 了，宿主机修改之后，container 里的文件就会发生变化。这种情况下，就只需要重启程序进程即可。不过何必呢？就照着标准来吧。)
 
 接下来往细了讲：
 
@@ -60,7 +70,7 @@
 
 在之后，以下一切讲到关于 prompt、音频、视频等这些处理，其实全都放在 realtime system 的这个容器代码中。
 
-这边用的是 Python，没有别的原因，就是单纯因为我 Python 更熟一点。用 Python 写，我能看得懂也好修改；如果是用其他语言，我还得再学一门，感觉就有点偏了
+这边用的是 Python，没有别的原因，就是单纯因为我 Python 更熟一点。用 Python 写，我能看得懂方面上手改；如果是用其他语言，我还得再学一门的格式，感觉南辕北辙了。
 
 ---
 
