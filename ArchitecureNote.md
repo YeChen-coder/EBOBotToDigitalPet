@@ -37,7 +37,11 @@
 
 还有件事：那个 .env 肯定不在 Docker 里面，必须在 Docker 外面。不然每次改它我还得进到容器里面直接改，那实在太费劲了，所以它一定是在外面。
 
-而且每次对 .env 做了更改之后，就必须重新 recreate 这个 container 了。
+而且每次对 .env 做了更改之后，就必须重新 recreate 这个 container 了。注意一下，这边虽然有三个 container，但确实只有一个 runtime assistant 的 container 是跟 .env 有关的。
+
+其他两位（Home Assistant 和 ebo-engine）跟 .env 里的 prompt 没关系。我最常出现的情况就是改了 .env 里面的 prompt，也就是里面 role 的 prompt。
+
+所以一般这种情况下，只需要重新生成 runtime assistant 这个 container 就可以了。
 
 这好像是跟文件挂载有关系，不过具体怎么回事我给忘了。
 
