@@ -300,7 +300,8 @@ Bug 是这样：之前直接采用了第三版（第三版 Git：加上了“随
 
 拿日志来说吧，自从进行 deployment 之后一共产生 8 条新回答，但这 8 条新回答全部都被标记成了 interrupted（等于截断了），没有一条说完。模型那边给我的东西肯定是没有问题的，但问题是模型那边生成了 5 秒多的声音，却只播放了 400 毫秒
 
---
+---
+
 很头疼，它又在非常密集的时间段里开始去 ready 然后 release 这个 stream，接着又给 stopped 了。
 
 看这个情况，基本上一秒说话要停、一秒说话要停。这其实说明之前在软件上去写、去把回声消除开关打开，其实没什么用。
@@ -308,12 +309,19 @@ Bug 是这样：之前直接采用了第三版（第三版 Git：加上了“随
 现在已经是AEC ENABLE = TRUE 的状态了，但自己把自己停掉的问题还是没解决，那可能确实是成不了了。 
 
 "18:14:05 [talk-stream] ready: stream_xxxxxxxxxxx
+
 18:14:05 [talk-stream] released stream_xxxxxxxxx at 280 ms
+
 18:14:05 [panel] cmd ebo/talk/stop = 
+
 18:14:05 [talk] stopped
+
 18:14:05 [talk-stream] ready: stream_xxxxxxxxx
+
 18:14:06 [talk-stream] released stream_xxxxxxx at 300 ms
+
 18:14:06 [panel] cmd ebo/talk/stop = 
+
 18:14:06 [talk] stopped"
 
 回退倒是不至于，其实也用不着，因为已经把它做成了一个可以通过环境配置文件去控制开关的状态了。
