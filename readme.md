@@ -14,6 +14,12 @@
 
 <img width="376" height="338" alt="image" src="https://github.com/user-attachments/assets/b3db0b66-be70-4690-bf07-84c06e229c19" />
 
+-这是去看了ebo max的测评视频的补充，很抱歉，但是请允许我笑一下。我之前说原厂的东西做得好、他们有优势，这一点我收回。我真切地觉得，起码在这个方面上，我做得比他们好 -原厂的realtime实时交互还不如我野路子调教的呢。举个例子吧，在 YouTube 视频中（https://www.youtube.com/watch?v=7njYqJfdipc）， 博主去测了 EBO Bot 的 AI Assistant 功能。但这结果该怎么说呢，您看吧，还不如我自己去手动搓一个直连 OpenAI 的东西呢。我觉得我真挺厉害的，真的。
+
+<img width="331" height="297" alt="image" src="https://github.com/user-attachments/assets/c408debb-b4a6-4a3e-87f2-6642dd3632e5" />
+
+
+
 做这个最核心的原因，是我确实没法回去陪爸妈。虽然有时我也会远程操控机器人到处跑跑、说说话，但很多时候我自己的状态甚至连话都不想说。这种情况下，我更希望这个小机器人能自己去跟我爸妈互动，算是代替我的一个“平替版”。
 
 在做这个 AI 项目时我也考虑到，它不应该只适配 EBO 这么一个设备，而是应该能兼容所有带摄像头的东西。太 specific 的方案我觉得没有意义，也不值得投入。
