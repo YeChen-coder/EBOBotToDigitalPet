@@ -405,8 +405,21 @@ emo了两天，在mall看什么都像透过人群看到了人去楼空，层楼�
 
 而且为了维持视频流的 streaming（之前提到过 EBO Bot 有个默认机制，idle 5 分钟后会自动断开视频流连接，之前为了解决这个问题，采用了一些方法让它持续维持 streaming 不要断），这两者碰在一起就出事了：
 
-listen = no 的指令发给了 EBO Bot，但与此同时，模型那边收到的是持续静音的音频。模型没有报错，以为音频是正常的，只是持续静音。
+listen = no 的指令发给了 EBO Bot，但与此同时，模型那边收到的是持续静音的音频。模型没有报错，以为音频是正常的，只是持续静音 （[audio-health] status=receiving **listen=True** bitrate=0 bytes=4025）。
 
-这就导致从昨天我修改完代码一直到今天中午，一条 transcribe 都没有。那边没有收到任何声音，自然就不会触发后续找 OpenAI 要 response（当然就算要了 response 也没用，全是静音，顶多放点画面出去）。
+这就导致从昨天我修改完代码一直到今天中午，一条 transcribe 都没有。程序那边没有收到任何声音，自然就不会触发后续找 OpenAI 要 response（当然就算要了 response 也没用，全是静音，顶多放点画面出去）。
 
 这件事情在修了。亲爱的Astra, 请你帮帮我。
+
+等一下，事情还是不对。这是 ebo-engine 的 log，就发生在一分钟之前。我去 Home Assistant 上看了一下 Dashboard，点了一下开始听，然后又停掉（不要听了），就进行了这么一个操作。即为Home Assistant 的原生“Listen”开关也会调用同一个全局关麦接口。
+
+但很明显，就是因为这件事情的 priority，把程序那边的配置给 override 了。这样不行，这种情况一定会反复出现的，这个事情一定要改。
+
+“11:31:05 [panel] cmd ebo/listen/set = on
+11:31:05 [audio] listen -> on
+11:31:14 [panel] cmd ebo/listen/set = off
+11:31:14 [audio] listen -> off”
+
+复现了，非常确定，就是 Home Assistant 那边的 dashboard 的这个锅。
+
+把home assistant的接口命令给block了，实测没有再listen -> off。([panel] blocked legacy listen/set; no microphone change (refresh client))
