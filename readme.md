@@ -1,6 +1,18 @@
 上次回国的时候买了 EBO Air 2S Pro。主要原因很简单：它是当时最好看的一个 - 外形真的很重要。
 
-厂家虽然有了内部载入了 ChatGPT-4o mini 的旗舰版，但首先它根本不可能在这么小的机器上跑本地模型，其本质上还是调用 API Key；其次这样很不自由，我有很多想法和想 customize 的东西，不自由的话束手手脚的，一点都不符合后 AI 时代的背景。
+这个样子哒，可爱即是王道！
+
+<img width="558" height="542" alt="image" src="https://github.com/user-attachments/assets/310241f0-28de-48cf-8b4a-e6765541e934" />
+
+详细介绍在这里： https://www.enabot.com/home-robot/ebo-air-2s
+
+厂家后来有了内部载入LLM模型的EBO max (https://www.enabot.com/support/ebo-max?anchor=support-faq-anchor)，但它贵（已经买了一台ebo bot了，再买一个我爸妈会锤我的）；其次这样很不自由，我有很多想法和想 customize 的东西，不自由的话束手手脚的，一点都不符合后 AI 时代的背景。不过不得不说，人家原厂的东西做得确实是好，不仅有视觉 SLAM 导航，还有多点记忆。这确实能把我给难住。所有涉及地图和导航的东西，不管是算法里面的走迷宫，还是物理上的卫星寻路导航，全都能把我给整懵。我在地图这方面，真的非常容易被打倒。
+
+（对不起，默默吐槽一下，max 不如 pro可爱）
+
+下图是max:
+
+<img width="376" height="338" alt="image" src="https://github.com/user-attachments/assets/b3db0b66-be70-4690-bf07-84c06e229c19" />
 
 做这个最核心的原因，是我确实没法回去陪爸妈。虽然有时我也会远程操控机器人到处跑跑、说说话，但很多时候我自己的状态甚至连话都不想说。这种情况下，我更希望这个小机器人能自己去跟我爸妈互动，算是代替我的一个“平替版”。
 
