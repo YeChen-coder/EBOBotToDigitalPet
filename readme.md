@@ -6,7 +6,7 @@
 
 详细介绍在这里： https://www.enabot.com/home-robot/ebo-air-2s
 
-厂家后来有了内部载入LLM模型的EBO max (https://www.enabot.com/support/ebo-max?anchor=support-faq-anchor)，但它贵（已经买了一台ebo bot了，再买一个我爸妈会锤我的）；其次这样很不自由，我有很多想法和想 customize 的东西，不自由的话束手手脚的，一点都不符合后 AI 时代的背景。不过不得不说，人家原厂的东西做得确实是好，不仅有视觉 SLAM 导航，还有多点记忆。这确实能把我给难住。所有涉及地图和导航的东西，不管是算法里面的走迷宫，还是物理上的卫星寻路导航，全都能把我给整懵。我在地图这方面，真的非常容易被打倒。
+厂家后来有了内部载入LLM模型的EBO max (https://www.enabot.com/support/ebo-max?anchor=support-faq-anchor)， 但它贵（已经买了一台ebo bot了，再买一个我爸妈会锤我的）；其次这样很不自由，我有很多想法和想 customize 的东西，不自由的话束手手脚的，一点都不符合后 AI 时代的背景。不过不得不说，人家原厂的东西做得确实是好，不仅有视觉 SLAM 导航，还有多点记忆。这确实能把我给难住。所有涉及地图和导航的东西，不管是算法里面的走迷宫，还是物理上的卫星寻路导航，全都能把我给整懵。我在地图这方面，真的非常容易被打倒。
 
 （对不起，默默吐槽一下，max 不如 pro可爱）
 
