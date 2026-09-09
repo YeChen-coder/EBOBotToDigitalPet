@@ -106,7 +106,7 @@ docker compose logs -f realtime-assistant
 | `MOTION_THRESHOLD` | 25 | 像素亮度变化阈值；越大越不敏感 |
 | `MOTION_MIN_AREA_RATIO` | 0.003 | 最大运动块占画面的最小比例 |
 | `MOTION_CONFIRM_FRAMES` | 2 | 连续多少帧才确认运动 |
-| `MOTION_COOLDOWN_SECONDS` | 12 | 两张上传图片之间的最短间隔 |
+| `MOTION_COOLDOWN_SECONDS` | 3 | 两张上传图片之间的最短间隔 |
 | `MOTION_MAX_CHANGE_RATIO` | 0.55 | 超过该比例视为转头/光变并重置背景 |
 | `REALTIME_IMAGE_WIDTH` | 768 | 上传图片宽度 |
 | `REALTIME_IMAGE_QUALITY` | 75 | JPEG 质量 |
