@@ -423,3 +423,14 @@ listen = no 的指令发给了 EBO Bot，但与此同时，模型那边收到的
 复现了，非常确定，就是 Home Assistant 那边的 dashboard 的这个锅。
 
 把home assistant的接口命令给block了，实测没有再listen -> off。([panel] blocked legacy listen/set; no microphone change (refresh client))
+
+---
+
+这边又出问题了。前两天换了新的 prompt，也把 VAD 的阈值下调了，但当前模型的输出发现几个状况：
+
+1. 它在频繁说听不到、麦克风好像没收到声音，或者声音不清晰，所以不太清楚用户说了什么
+2. 它在频繁单纯描述画面，这肯定不是 idle 的状态
+
+关于画面描述这件事情我们还是有思路的，得去改 prompt。当时把 prompt 分了四层：一层是 role 那边的，还有一层是因为要传图像过去，接收图像后要先进行描述，所以当时分开了。
+
+现在明显是第二层有问题，表现实在太差了。我觉得还是去跟 Astra 说一下，看这个东西怎么改.
