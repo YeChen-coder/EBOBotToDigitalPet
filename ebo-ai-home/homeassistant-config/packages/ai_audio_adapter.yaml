@@ -1,0 +1,67 @@
+# Brand-neutral speech output. AI automations speak to a media_player and do not
+# call an EBO-specific topic or HTTP endpoint directly.
+input_select:
+  ai_audio_output:
+    name: AI audio output
+    options:
+      - media_player.ebo_speaker
+    icon: mdi:speaker-wireless
+
+input_text:
+  ai_tts_engine:
+    name: AI TTS engine
+    initial: tts.google_translate_en_com
+    max: 128
+
+  ai_last_reply:
+    name: AI last spoken reply
+    initial: 尚未说话
+    max: 255
+
+script:
+  ai_speak:
+    alias: AI companion - speak
+    description: >-
+      Device-neutral speech output. Change the selected media player or TTS
+      engine without changing the conversation logic.
+    icon: mdi:account-voice
+    mode: queued
+    max: 5
+    fields:
+      message:
+        name: Message
+        required: true
+        selector:
+          text:
+            multiline: true
+      language:
+        name: Language
+        default: zh-CN
+        selector:
+          text:
+    sequence:
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.ai_last_reply
+        data:
+          value: "{{ message | truncate(255, true, '') }}"
+      - action: tts.speak
+        target:
+          entity_id: "{{ states('input_text.ai_tts_engine') }}"
+        data:
+          media_player_entity_id: "{{ states('input_select.ai_audio_output') }}"
+          message: "{{ message }}"
+          language: "{{ language | default('zh-CN', true) }}"
+          cache: true
+
+  ai_speaker_test:
+    alias: AI companion - test speaker
+    description: Play a short Mandarin sentence through the selected audio output.
+    icon: mdi:volume-high
+    mode: single
+    sequence:
+      - action: script.ai_speak
+        data:
+          message: 你好，EBO 语音通道测试成功。
+          language: zh-CN
+

@@ -1,0 +1,26 @@
+default_config:
+
+homeassistant:
+  packages: !include_dir_named packages
+  media_dirs:
+    media: /media
+    llmvision: /media/llmvision
+
+# EBO exposes RTSP; Home Assistant turns that into a normal camera entity.
+stream:
+
+logger:
+  default: info
+  logs:
+    custom_components.ebo: info
+    custom_components.llmvision: info
+
+lovelace:
+  mode: storage
+  dashboards:
+    ai-playmate:
+      mode: yaml
+      title: AI 小伙伴
+      icon: mdi:robot-happy-outline
+      show_in_sidebar: true
+      filename: dashboards/ai-playmate.yaml

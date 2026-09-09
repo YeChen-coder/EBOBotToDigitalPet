@@ -1,0 +1,32 @@
+- id: '1787803437005'
+  alias: 12：30，forward button press once
+  description: ''
+  triggers:
+  - trigger: time
+    at: 00:30:00
+    weekday:
+    - sat
+    - fri
+    - thu
+    - wed
+    - tue
+    - mon
+    - sun
+  - trigger: time
+    at: '12:30:00'
+    weekday:
+    - sun
+    - mon
+    - tue
+    - thu
+    - wed
+    - fri
+    - sat
+  conditions: []
+  actions:
+  - action: button.press
+    metadata: {}
+    target:
+      entity_id: button.ebo_forward
+    data: {}
+  mode: single

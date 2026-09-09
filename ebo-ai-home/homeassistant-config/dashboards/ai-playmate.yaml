@@ -1,0 +1,158 @@
+title: AI 小伙伴
+views:
+  - title: 看看家里
+    path: home
+    icon: mdi:eye-spark-outline
+    cards:
+      - type: markdown
+        content: >-
+          ## 从这里开始
+
+          EBO 现在保持在线。要听父母家那边的声音，直接点下面的
+          播放器上的 **🔇**。这个按钮只改变本机播放，不关闭助手麦克风。只有点 **🎤** 时，浏览器才会申请
+          使用这台电脑的麦克风。
+
+      - type: markdown
+        content: >-
+          ## EBO 远程听说
+
+          下方控制画面加载后，点顶部的 **🔇** 按钮开始听父母家那边的声音；
+          图标会变成 **🔊**，再次点击只静音当前播放器，助手仍可听见。
+          点 **🎤** 才会开启这台电脑的麦克风并进行对讲。
+          全局关麦请到 EBO 控制面板的 Audio 隐私开关操作，不是“停止听”。
+
+      - type: iframe
+        url: http://localhost:8101/?node=ebo&fullscreen=1&ui=local-listen-v2
+        aspect_ratio: 75%
+
+      - type: entities
+        title: 声音连接状态
+        show_header_toggle: false
+        entities:
+          - entity: number.ebo_talkback_volume
+            name: EBO 播放我的声音时的音量
+
+      - type: conditional
+        conditions:
+          - entity: switch.ebo_camera
+            state: "off"
+        card:
+          type: markdown
+          title: EBO 示例设备
+          content: >-
+            💤 **EBO 正在休息，摄像头没有连接。**
+
+            请点下面的“1. 唤醒画面”。系统会保持视频会话，不再因为
+            5 分钟没有操作而主动断开。
+
+      - type: conditional
+        conditions:
+          - entity: switch.ebo_camera
+            state: "on"
+        card:
+          type: picture-entity
+          entity: camera.ebo
+          name: EBO 示例设备（点画面看直播）
+          camera_view: auto
+          show_name: true
+          show_state: true
+
+      - type: horizontal-stack
+        cards:
+          - type: button
+            name: 1. 唤醒画面
+            icon: mdi:power
+            show_state: false
+            tap_action:
+              action: call-service
+              service: script.turn_on
+              target:
+                entity_id: script.ebo_wake_camera
+            hold_action:
+              action: more-info
+          - type: button
+            name: 2. AI 看一眼
+            icon: mdi:robot-happy-outline
+            show_state: false
+            tap_action:
+              action: call-service
+              service: script.turn_on
+              target:
+                entity_id: script.ebo_ai_look_and_describe
+            hold_action:
+              action: more-info
+
+      - type: button
+        name: 摄像头已经醒着：只做 AI 分析
+        icon: mdi:camera-iris
+        show_state: false
+        tap_action:
+          action: call-service
+          service: script.turn_on
+          target:
+            entity_id: script.ai_camera_describe
+        hold_action:
+          action: more-info
+
+      - type: markdown
+        title: AI 看到的画面
+        content: >-
+          {{ states('input_text.ai_last_description') }}
+
+      - type: markdown
+        content: >-
+          ## 声音测试
+
+          点下面的按钮后，Home Assistant 会先自动唤醒音频会话，再让
+          EBO 说一句测试话。这只是测试“嘴巴”，不会开启持续监听。
+
+      - type: button
+        name: 3. 测试 EBO 说话
+        icon: mdi:volume-high
+        show_state: false
+        tap_action:
+          action: call-service
+          service: script.turn_on
+          target:
+            entity_id: script.ai_speaker_test
+        hold_action:
+          action: more-info
+
+      - type: entities
+        title: 可替换的声音接口
+        show_header_toggle: false
+        entities:
+          - entity: input_select.ai_audio_output
+            name: 声音输出设备
+          - entity: media_player.ebo_speaker
+            name: EBO 示例设备 扬声器
+          - entity: number.ebo_talkback_volume
+            name: 对讲音量
+          - entity: input_text.ai_last_reply
+            name: 最近播放的内容
+
+      - type: entities
+        title: 可替换的视觉接口
+        show_header_toggle: false
+        entities:
+          - entity: input_select.ai_camera_source
+            name: 摄像头来源
+          - entity: input_text.ai_playmate_prompt
+            name: AI 提示词
+          - entity: input_text.ai_last_description
+            name: 最新描述
+
+      - type: entities
+        title: EBO 状态与安全控制
+        show_header_toggle: false
+        entities:
+          - entity: binary_sensor.ebo_online
+            name: 在线
+          - entity: sensor.ebo_battery
+            name: 电量
+          - entity: binary_sensor.ebo_docked
+            name: 在充电座
+          - entity: button.ebo_stop
+            name: 立即停止
+          - entity: button.ebo_standby
+            name: 现在休眠

@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="760" viewBox="0 0 1400 760">
+  <defs>
+    <style>
+      .title{font:700 34px 'Microsoft YaHei','Noto Sans CJK SC',sans-serif;fill:#12324a}
+      .h{font:700 24px 'Microsoft YaHei','Noto Sans CJK SC',sans-serif;fill:#12324a}
+      .t{font:400 19px 'Microsoft YaHei','Noto Sans CJK SC',sans-serif;fill:#2b475b}
+      .small{font:400 16px 'Microsoft YaHei','Noto Sans CJK SC',sans-serif;fill:#4f6777}
+      .box{rx:22;stroke-width:3}
+      .arrow{stroke:#3b82a0;stroke-width:5;fill:none;marker-end:url(#m)}
+    </style>
+    <marker id="m" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0,0 L12,6 L0,12 z" fill="#3b82a0"/></marker>
+  </defs>
+  <rect width="1400" height="760" fill="#f7fbfd"/>
+  <text x="700" y="58" text-anchor="middle" class="title">EBO、Home Assistant、LLM Vision 和 OpenAI 的关系</text>
+
+  <rect x="55" y="135" width="250" height="160" class="box" fill="#eaf6ff" stroke="#5aa4d6"/>
+  <text x="180" y="185" text-anchor="middle" class="h">摄像头来源</text>
+  <text x="180" y="225" text-anchor="middle" class="t">现在：EBO Air 2S</text>
+  <text x="180" y="260" text-anchor="middle" class="t">以后：普通 RTSP / ONVIF</text>
+
+  <rect x="385" y="135" width="270" height="160" class="box" fill="#eef9f2" stroke="#63ad7b"/>
+  <text x="520" y="185" text-anchor="middle" class="h">摄像头适配层</text>
+  <text x="520" y="225" text-anchor="middle" class="t">把不同设备统一变成</text>
+  <text x="520" y="260" text-anchor="middle" class="h">camera.*</text>
+
+  <rect x="735" y="135" width="280" height="160" class="box" fill="#fff8e8" stroke="#d7a638"/>
+  <text x="875" y="185" text-anchor="middle" class="h">Home Assistant</text>
+  <text x="875" y="225" text-anchor="middle" class="t">面板 / 脚本 / 自动化</text>
+  <text x="875" y="260" text-anchor="middle" class="t">状态和安全控制</text>
+
+  <rect x="1095" y="135" width="250" height="160" class="box" fill="#f4efff" stroke="#8c6dcc"/>
+  <text x="1220" y="185" text-anchor="middle" class="h">LLM Vision</text>
+  <text x="1220" y="225" text-anchor="middle" class="t">取一张画面</text>
+  <text x="1220" y="260" text-anchor="middle" class="t">交给 OpenAI 理解</text>
+
+  <path d="M305 215 H375" class="arrow"/>
+  <path d="M655 215 H725" class="arrow"/>
+  <path d="M1015 215 H1085" class="arrow"/>
+
+  <rect x="735" y="390" width="610" height="200" class="box" fill="#ffffff" stroke="#88a0af"/>
+  <text x="1040" y="438" text-anchor="middle" class="h">OpenAI 视觉模型</text>
+  <text x="1040" y="480" text-anchor="middle" class="t">输入：一张图片 + 你的提示词</text>
+  <text x="1040" y="520" text-anchor="middle" class="t">输出：中文描述文字</text>
+  <text x="1040" y="555" text-anchor="middle" class="small">它不控制直播，也不会占住摄像头</text>
+  <path d="M1220 295 V380" class="arrow"/>
+
+  <rect x="55" y="390" width="600" height="200" class="box" fill="#ffffff" stroke="#88a0af"/>
+  <text x="355" y="438" text-anchor="middle" class="h">解耦的关键</text>
+  <text x="355" y="480" text-anchor="middle" class="t">AI 脚本只认识 camera.*，不认识 EBO 品牌</text>
+  <text x="355" y="520" text-anchor="middle" class="t">换摄像头时，只换左边两块</text>
+  <text x="355" y="555" text-anchor="middle" class="t">右边的面板、提示词和 OpenAI 都不用重做</text>
+
+  <rect x="210" y="650" width="980" height="70" rx="18" fill="#dff3f7" stroke="#69aebd" stroke-width="2"/>
+  <text x="700" y="694" text-anchor="middle" class="h">稳定接口：camera.*  是整个系统里最重要的“插座”</text>
+</svg>

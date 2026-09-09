@@ -1,0 +1,158 @@
+name: ebo-ai-home
+
+services:
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: ebo-ai-home-homeassistant
+    restart: unless-stopped
+    ports:
+      - "8123:8123"
+    volumes:
+      - ./homeassistant-config:/config
+      - ./media:/media
+      - ./ha-llmvision/custom_components/llmvision:/config/custom_components/llmvision:ro
+      - ./ha-enabot/ebo/ha_integration/custom_components/ebo:/config/custom_components/ebo:ro
+    environment:
+      TZ: ${TZ:-America/Toronto}
+    networks:
+      - ai-camera
+
+  # Optional adapter for Enabot's cloud camera/control protocol. Home Assistant and
+  # LLM Vision do not depend on this service, so another camera can replace it later.
+  ebo-engine:
+    image: ebo-ai-home/ebo-engine:0.26.100
+    build:
+      context: ./ha-enabot/ebo
+    container_name: ebo-ai-home-ebo-engine
+    # The assistant profile also needs the RTSP/API adapter.
+    profiles: ["ebo", "assistant"]
+    platform: linux/amd64
+    restart: unless-stopped
+    ports:
+      - "8098:8098"
+      # Local-only copy of the EBO control panel. It has no standalone login because
+      # Home Assistant OS normally protects it with Ingress, so never expose it on LAN.
+      - "127.0.0.1:8101:8099"
+      - "8554-8557:8554-8557"
+      - "8189-8192:8189-8192/tcp"
+      - "8189-8192:8189-8192/udp"
+    expose:
+      # PCM talkback is intentionally reachable only by containers on ai-camera.
+      - "8200"
+    volumes:
+      - ./ebo-data:/data
+    environment:
+      # Stable name used in discovery URLs consumed by HA. Never use Docker's changing container id.
+      EBO_API_HOST: ebo-engine
+      EBO_TALK_STREAM_PORT: ${EBO_TALK_STREAM_PORT:-8200}
+      # Mirror Docker stdout to the host-mounted ebo-data/logs directory with rotation.
+      EBO_HOST_LOG_PATH: ${EBO_HOST_LOG_PATH:-/data/logs/ebo-engine.log}
+      EBO_HOST_LOG_MAX_BYTES: ${EBO_HOST_LOG_MAX_BYTES:-10485760}
+      EBO_HOST_LOG_BACKUP_COUNT: ${EBO_HOST_LOG_BACKUP_COUNT:-5}
+      TZ: ${TZ:-America/Toronto}
+      # Agora Server SDK audio processing. Keep these explicit so each processor can be A/B tested.
+      EBO_AGORA_AEC_ENABLED: ${EBO_AGORA_AEC_ENABLED:-false}
+      EBO_AGORA_NOISE_SUPPRESSION_ENABLED: ${EBO_AGORA_NOISE_SUPPRESSION_ENABLED:-false}
+      EBO_AGORA_AGC_ENABLED: ${EBO_AGORA_AGC_ENABLED:-false}
+    networks:
+      - ai-camera
+
+  # Local event gate + OpenAI Realtime voice/vision bridge. It consumes the
+  # already-restreamed RTSP instead of coupling to Enabot's private protocol.
+  realtime-assistant:
+    build:
+      context: ./realtime-assistant
+    image: ebo-ai-home/realtime-assistant:0.1.0
+    container_name: ebo-ai-home-realtime-assistant
+    profiles: ["assistant"]
+    restart: unless-stopped
+    init: true
+    depends_on:
+      - ebo-engine
+    ports:
+      - "8099:8099"
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_REALTIME_MODEL: ${OPENAI_REALTIME_MODEL:-gpt-realtime-2.1}
+      OPENAI_REALTIME_VOICE: ${OPENAI_REALTIME_VOICE:-marin}
+      OPENAI_REALTIME_OUTPUT_SPEED: ${OPENAI_REALTIME_OUTPUT_SPEED:-1.0}
+      OPENAI_REALTIME_OUTPUT_MODALITY: ${OPENAI_REALTIME_OUTPUT_MODALITY:-audio}
+      OPENAI_REALTIME_REASONING_EFFORT: ${OPENAI_REALTIME_REASONING_EFFORT:-}
+      OPENAI_REALTIME_MAX_OUTPUT_TOKENS: ${OPENAI_REALTIME_MAX_OUTPUT_TOKENS:-inf}
+      OPENAI_REALTIME_INCLUDE_TRANSCRIPTION_LOGPROBS: ${OPENAI_REALTIME_INCLUDE_TRANSCRIPTION_LOGPROBS:-false}
+      OPENAI_INPUT_TRANSCRIPTION_MODEL: ${OPENAI_INPUT_TRANSCRIPTION_MODEL:-gpt-transcribe}
+      OPENAI_INPUT_TRANSCRIPTION_DELAY: ${OPENAI_INPUT_TRANSCRIPTION_DELAY:-}
+      OPENAI_INPUT_TRANSCRIPTION_KEYWORDS_JSON: '${OPENAI_INPUT_TRANSCRIPTION_KEYWORDS_JSON:-}'
+      OPENAI_INPUT_TRANSCRIPTION_LANGUAGE: ${OPENAI_INPUT_TRANSCRIPTION_LANGUAGE:-}
+      OPENAI_INPUT_TRANSCRIPTION_LANGUAGES_JSON: '${OPENAI_INPUT_TRANSCRIPTION_LANGUAGES_JSON:-}'
+      OPENAI_INPUT_TRANSCRIPTION_PROMPT: ${OPENAI_INPUT_TRANSCRIPTION_PROMPT:-}
+      OPENAI_REALTIME_PROMPT_ID: ${OPENAI_REALTIME_PROMPT_ID:-}
+      OPENAI_REALTIME_PROMPT_VERSION: ${OPENAI_REALTIME_PROMPT_VERSION:-}
+      OPENAI_REALTIME_PROMPT_VARIABLES_JSON: '${OPENAI_REALTIME_PROMPT_VARIABLES_JSON:-}'
+      OPENAI_REALTIME_PARALLEL_TOOL_CALLS: ${OPENAI_REALTIME_PARALLEL_TOOL_CALLS:-}
+      OPENAI_REALTIME_TOOLS_JSON: '${OPENAI_REALTIME_TOOLS_JSON:-}'
+      OPENAI_REALTIME_TOOL_CHOICE: '${OPENAI_REALTIME_TOOL_CHOICE:-}'
+      OPENAI_REALTIME_TRACING: '${OPENAI_REALTIME_TRACING:-}'
+      OPENAI_REALTIME_TRUNCATION_TYPE: ${OPENAI_REALTIME_TRUNCATION_TYPE:-retention_ratio}
+      OPENAI_REALTIME_RETENTION_RATIO: ${OPENAI_REALTIME_RETENTION_RATIO:-0.8}
+      OPENAI_REALTIME_POST_INSTRUCTIONS_TOKENS: ${OPENAI_REALTIME_POST_INSTRUCTIONS_TOKENS:-8000}
+      REALTIME_INPUT_NOISE_REDUCTION: ${REALTIME_INPUT_NOISE_REDUCTION:-off}
+      REALTIME_TURN_DETECTION_TYPE: ${REALTIME_TURN_DETECTION_TYPE:-server_vad}
+      REALTIME_VAD_THRESHOLD: ${REALTIME_VAD_THRESHOLD:-0.55}
+      REALTIME_VAD_PREFIX_PADDING_MS: ${REALTIME_VAD_PREFIX_PADDING_MS:-300}
+      REALTIME_VAD_SILENCE_DURATION_MS: ${REALTIME_VAD_SILENCE_DURATION_MS:-650}
+      REALTIME_VAD_IDLE_TIMEOUT_MS: ${REALTIME_VAD_IDLE_TIMEOUT_MS:-0}
+      REALTIME_SEMANTIC_VAD_EAGERNESS: ${REALTIME_SEMANTIC_VAD_EAGERNESS:-auto}
+      REALTIME_VAD_CREATE_RESPONSE: ${REALTIME_VAD_CREATE_RESPONSE:-false}
+      REALTIME_VAD_INTERRUPT_RESPONSE: ${REALTIME_VAD_INTERRUPT_RESPONSE:-true}
+      EBO_TRANSCRIPT_PATH: ${EBO_TRANSCRIPT_PATH:-/data/transcripts.jsonl}
+      EBO_OUTPUT_AUDIO_DIR: ${EBO_OUTPUT_AUDIO_DIR:-/data/replies}
+      EBO_ASSISTANT_TRANSCRIPT_PATH: ${EBO_ASSISTANT_TRANSCRIPT_PATH:-/data/assistant_outputs.jsonl}
+      EBO_MEMORY_LOG_PATH: ${EBO_MEMORY_LOG_PATH:-/data/logs/session-memory.jsonl}
+      EBO_MEMORY_LOG_MAX_BYTES: ${EBO_MEMORY_LOG_MAX_BYTES:-1048576}
+      EBO_MEMORY_LOG_BACKUP_COUNT: ${EBO_MEMORY_LOG_BACKUP_COUNT:-3}
+      EBO_API_TOKEN: ${EBO_API_TOKEN:-}
+      EBO_TALK_STREAM_URL: ${EBO_TALK_STREAM_URL:-ws://ebo-engine:8200/talk}
+      EBO_STREAM_PREBUFFER_MS: ${EBO_STREAM_PREBUFFER_MS:-200}
+      EBO_STREAM_CONNECT_TIMEOUT_SECONDS: ${EBO_STREAM_CONNECT_TIMEOUT_SECONDS:-10}
+      EBO_BARGE_IN_ENABLED: ${EBO_BARGE_IN_ENABLED:-true}
+      EBO_BARGE_IN_CONFIRM_MS: ${EBO_BARGE_IN_CONFIRM_MS:-300}
+      EBO_BARGE_IN_PREROLL_MS: ${EBO_BARGE_IN_PREROLL_MS:-500}
+      EBO_BARGE_IN_VAD_MODE: ${EBO_BARGE_IN_VAD_MODE:-2}
+      EBO_BARGE_IN_ECHO_CORRELATION: ${EBO_BARGE_IN_ECHO_CORRELATION:-0.65}
+      EBO_BARGE_IN_RESIDUAL_RATIO: ${EBO_BARGE_IN_RESIDUAL_RATIO:-0.45}
+      EBO_AUTO_WAKE: ${EBO_AUTO_WAKE:-true}
+      EBO_VISUAL_MODE: ${EBO_VISUAL_MODE:-context}
+      EBO_ASSISTANT_INSTRUCTIONS: ${EBO_ASSISTANT_INSTRUCTIONS:-}
+      MOTION_FPS: ${MOTION_FPS:-2}
+      MOTION_THRESHOLD: ${MOTION_THRESHOLD:-25}
+      MOTION_MIN_AREA_RATIO: ${MOTION_MIN_AREA_RATIO:-0.003}
+      MOTION_MAX_CHANGE_RATIO: ${MOTION_MAX_CHANGE_RATIO:-0.55}
+      MOTION_CONFIRM_FRAMES: ${MOTION_CONFIRM_FRAMES:-2}
+      MOTION_COOLDOWN_SECONDS: ${MOTION_COOLDOWN_SECONDS:-12}
+      REALTIME_IMAGE_WIDTH: ${REALTIME_IMAGE_WIDTH:-768}
+      REALTIME_IMAGE_QUALITY: ${REALTIME_IMAGE_QUALITY:-75}
+      REALTIME_SESSION_REFRESH_SECONDS: ${REALTIME_SESSION_REFRESH_SECONDS:-3300}
+      REALTIME_SESSION_HARD_DEADLINE_SECONDS: ${REALTIME_SESSION_HARD_DEADLINE_SECONDS:-3540}
+      REALTIME_HANDOFF_TIMEOUT_SECONDS: ${REALTIME_HANDOFF_TIMEOUT_SECONDS:-20}
+      REALTIME_HANDOFF_MEMORY_CHARS: ${REALTIME_HANDOFF_MEMORY_CHARS:-4000}
+      REALTIME_RECONNECT_MEMORY_MAX_AGE_SECONDS: ${REALTIME_RECONNECT_MEMORY_MAX_AGE_SECONDS:-900}
+      EBO_MEDIA_STALE_AFTER_SECONDS: ${EBO_MEDIA_STALE_AFTER_SECONDS:-20}
+      EBO_MEDIA_STARTUP_GRACE_SECONDS: ${EBO_MEDIA_STARTUP_GRACE_SECONDS:-45}
+      TZ: ${TZ:-America/Toronto}
+    tmpfs:
+      - /tmp
+    volumes:
+      - ./assistant-data:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import json,sys,urllib.request; h=json.load(urllib.request.urlopen('http://127.0.0.1:8099/health', timeout=2)); sys.exit(0 if h.get('ok') else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - ai-camera
+
+networks:
+  ai-camera:
+    name: ebo-ai-home-network
+    driver: bridge

@@ -1,0 +1,91 @@
+# Brand-neutral helpers. Automations should consume camera entities through this
+# selector instead of referring directly to camera.ebo.
+input_select:
+  ai_camera_source:
+    name: AI camera source
+    options:
+      - camera.ebo
+    icon: mdi:camera-switch
+
+input_text:
+  # LLM Vision identifies a provider by its Home Assistant config-entry ID.
+  # Keeping that ID in one helper avoids baking OpenAI into every automation.
+  ai_vision_provider:
+    name: AI vision provider
+    initial: ""  # Set your own LLM Vision provider config-entry ID after setup.
+    max: 64
+
+  ai_playmate_prompt:
+    name: AI playmate prompt
+    initial: >-
+      请用友好、简洁的中文描述当前画面。只说清楚看到的环境、人物或物体，
+      不猜测身份、健康状况、地址或其他敏感信息。
+    max: 255
+
+  ai_last_description:
+    name: AI last description
+    initial: 尚未分析
+    max: 255
+
+script:
+  ebo_wake_camera:
+    alias: EBO - wake camera
+    description: >-
+      Wake the EBO and give its video session time to become ready. This script
+      does not call the vision model.
+    icon: mdi:power
+    mode: restart
+    sequence:
+      - action: button.press
+        target:
+          entity_id: button.ebo_wake
+      - delay: "00:00:08"
+
+  ai_camera_describe:
+    alias: AI camera - describe current view
+    description: >-
+      Camera-neutral vision entry point. It depends only on a camera.* entity and
+      an LLM Vision provider, never on EBO-specific APIs or controls.
+    icon: mdi:eye-spark-outline
+    mode: single
+    sequence:
+      - action: llmvision.image_analyzer
+        continue_on_error: true
+        data:
+          provider: "{{ states('input_text.ai_vision_provider') }}"
+          message: "{{ states('input_text.ai_playmate_prompt') }}"
+          image_entity:
+            - "{{ states('input_select.ai_camera_source') }}"
+          include_filename: false
+          target_width: 1280
+          max_tokens: 300
+          generate_title: false
+          expose_images: false
+          store_in_timeline: false
+          use_memory: false
+          response_format: text
+        response_variable: ai_result
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.ai_last_description
+        data:
+          value: >-
+            {% if ai_result is defined and ai_result.response_text is defined %}
+              {{ ai_result.response_text | truncate(255, true, '') }}
+            {% else %}
+              AI 分析失败，请查看 Home Assistant 日志。
+            {% endif %}
+
+  ebo_ai_look_and_describe:
+    alias: EBO - wake, look and describe
+    description: >-
+      Thin EBO-only wrapper. Wake the robot, then call the brand-neutral camera
+      vision script. Replacing EBO later does not require changing the AI script.
+    icon: mdi:robot-happy-outline
+    mode: single
+    sequence:
+      - action: script.ebo_wake_camera
+      - action: script.ai_camera_describe
+
+# For another RTSP/ONVIF camera, add its camera.* entity ID to
+# input_select.ai_camera_source. The generic script remains unchanged.

@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="620" viewBox="0 0 1400 620">
+  <defs>
+    <style>
+      .title{font:700 34px 'Microsoft YaHei','Noto Sans CJK SC',sans-serif;fill:#12324a}
+      .n{font:700 30px 'Microsoft YaHei','Noto Sans CJK SC',sans-serif;fill:#fff}
+      .h{font:700 23px 'Microsoft YaHei','Noto Sans CJK SC',sans-serif;fill:#12324a}
+      .t{font:400 18px 'Microsoft YaHei','Noto Sans CJK SC',sans-serif;fill:#385466}
+      .arrow{stroke:#5b93a8;stroke-width:5;fill:none;marker-end:url(#m)}
+    </style>
+    <marker id="m" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0,0 L12,6 L0,12 z" fill="#5b93a8"/></marker>
+  </defs>
+  <rect width="1400" height="620" fill="#f7fbfd"/>
+  <text x="700" y="58" text-anchor="middle" class="title">最简单的使用顺序</text>
+
+  <g transform="translate(55 125)">
+    <circle cx="75" cy="75" r="65" fill="#8298a5"/><text x="75" y="87" text-anchor="middle" class="n">休眠</text>
+    <text x="75" y="175" text-anchor="middle" class="t">画面隐藏，不是故障</text>
+  </g>
+  <path d="M205 200 H320" class="arrow"/>
+
+  <g transform="translate(330 125)">
+    <circle cx="75" cy="75" r="65" fill="#2f8db7"/><text x="75" y="87" text-anchor="middle" class="n">1</text>
+    <text x="75" y="175" text-anchor="middle" class="h">点“唤醒画面”</text>
+    <text x="75" y="208" text-anchor="middle" class="t">等待约 8 秒</text>
+  </g>
+  <path d="M480 200 H595" class="arrow"/>
+
+  <g transform="translate(605 125)">
+    <circle cx="75" cy="75" r="65" fill="#48a56a"/><text x="75" y="87" text-anchor="middle" class="n">2</text>
+    <text x="75" y="175" text-anchor="middle" class="h">查看实时画面</text>
+    <text x="75" y="208" text-anchor="middle" class="t">需要时再分析</text>
+  </g>
+  <path d="M755 200 H870" class="arrow"/>
+
+  <g transform="translate(880 125)">
+    <circle cx="75" cy="75" r="65" fill="#8a6dcc"/><text x="75" y="87" text-anchor="middle" class="n">3</text>
+    <text x="75" y="175" text-anchor="middle" class="h">点“AI 看一眼”</text>
+    <text x="75" y="208" text-anchor="middle" class="t">OpenAI 返回中文</text>
+  </g>
+  <path d="M1030 200 H1145" class="arrow"/>
+
+  <g transform="translate(1155 125)">
+    <circle cx="75" cy="75" r="65" fill="#d59a35"/><text x="75" y="87" text-anchor="middle" class="n">完成</text>
+    <text x="75" y="175" text-anchor="middle" class="h">读“AI 看到的画面”</text>
+    <text x="75" y="208" text-anchor="middle" class="t">可继续换提示词</text>
+  </g>
+
+  <path d="M1230 370 C1230 520 130 520 130 370" class="arrow"/>
+  <rect x="435" y="425" width="530" height="92" rx="22" fill="#fff3d8" stroke="#d7a638" stroke-width="3"/>
+  <text x="700" y="463" text-anchor="middle" class="h">连续 5 分钟没有控制命令</text>
+  <text x="700" y="495" text-anchor="middle" class="t">系统自动回到休眠，保护电量和隐私</text>
+</svg>
