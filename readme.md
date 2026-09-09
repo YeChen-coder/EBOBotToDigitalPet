@@ -1,5 +1,5 @@
 
-技术向readme在 ./ebo-ai-home/README.zh-CN.md 里，这篇文档更像是一个开发日志吧。
+技术向readme在 ebo-ai-home/README.zh-CN.md 里，这篇文档更像是一个开发日志吧。
 
 这么做的原因，首先是现在大家 clone 一个 open source project 的时候，基本没人会自己去看 README 之类的东西了，更多是直接交给 coding agent 去看、去部署。
 
