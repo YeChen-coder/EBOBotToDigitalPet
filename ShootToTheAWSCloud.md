@@ -2,7 +2,7 @@
 
 ---
 
-AWS 今年其实已经推出了他们那边的 AWS DevOps Agent ，而且在业界还挺权威的。AI 那边的意思就是，大家都照着这个东西抄。（读他们的文章确实挺有道理的， 各种输入和架构本身作为 knowledge graph ）
+AWS 今年其实已经推出了他们那边的 AWS DevOps Agent ，而且在业界挺权威的。AI 那边的意思就是，大家都照着这个东西抄。（读他们的文章确实挺有道理的， 各种输入和架构本身作为 knowledge graph ）
 
 AWS DevOps Agent 确实可以做成“自动触发调查”，并不是每次都要你手动进去点。AWS 官方目前支持几种入口：内置的 ticketing/incident 集成、webhook，以及手动启动；官方文档明确举例说可以通过 PagerDuty ticket、Grafana alarm 等 webhook 事件自动触发 investigation。它也会结合 CloudWatch、Datadog、Grafana、New Relic、Splunk 等 observability 数据做调查。AWS DevOps Agent = 大约 $29.88/active-agent-hour 的 AI SRE/诊断工程师。
 
@@ -21,7 +21,9 @@ AWS DevOps Agent 确实可以做成“自动触发调查”，并不是每次都
 这个在智能拓展上确实是 AI 碾压人类的地方。
 
 ---
-哇，Codex 好聪明啊！这两个完全不一样的 project 在同步跑，它居然能调查出来我这边任务没法进行的原因，是因为被另外一个正在跑的任务给占了 ("原因已查明：另一个正在运行的任务 「调研 AWS Fargate 诊断架构」 正在执行你已授权的云端切换。它在本地时间 23:18:39 执行了停止本地 Engine 和 Assistant 的命令；Docker 事件也记录了对应的 SIGTERM 和正常退出。")。我甚至都还没来得及告诉它我那边可能有冲突，它自己就搞出来了。人类真的还能干得过 AI 吗？
+哇，Codex 好聪明啊！这两个完全不一样的 project 在同步跑，它居然能调查出来我这边任务没法进行的原因，是因为被另外一个正在跑的任务给占了 ("原因已查明：另一个正在运行的任务 「调研 AWS Fargate 诊断架构」 正在执行你已授权的云端切换。它在本地时间 23:18:39 执行了停止本地 Engine 和 Assistant 的命令；Docker 事件也记录了对应的 SIGTERM 和正常退出。")。
+
+甚至都还没来得及告诉它那边可能有冲突，它自己就搞出来了。人类真的还能干得过 AI 吗？
 
 ---
 
@@ -64,7 +66,9 @@ AWS DevOps Agent 确实可以做成“自动触发调查”，并不是每次都
 1. Tier 1：可以放 API key，也可以用 Codex 一个比较低级智能的模型跑
 2. Tier 2：用 Codex 的 Astra 模型
 
-但是 Codex 的 Ultra 实在是太费 token 了，冷却 5 小时，跑没 10 分钟。我觉得起码这几天（这三天吧），Codex 那边的 token 确实没什么余量能用在 diagnostic agent 上了。我不知道，尽量挤吧。
+以及要是实在搞不定，就想个办法通知人类。关于 notification 这方面，我这边最唾手可得的是 Telegram Bot，但具体的我还没做，毕竟不是重点，随时都能干。现在的重点是先把这个 agent loop 先给他搞好
+
+但是 Codex 的 Astra 实在是太费 token 了，冷却 5 小时，跑没 10 分钟。我觉得起码这几天（这三天吧），Codex 那边的 token 确实没什么余量能用在 diagnostic agent 上了。我不知道，尽量挤吧。
 
 怎么什么都要 token 啊，不喜欢。
 
