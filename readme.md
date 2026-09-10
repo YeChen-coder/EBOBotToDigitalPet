@@ -474,3 +474,47 @@ listen = no 的指令发给了 EBO Bot，但与此同时，模型那边收到的
 因为 AWS 于2026年推出了 AWS DevOps Agent，它算是一个大家都朝着它抄的范式嘛，那我就照着那个去抄， 不是， 复刻伟大的思想，去给它做简化嘛。
 
 暂定就这样，看文档理清楚框架去了。 
+
+---
+
+我又做了一些调研，觉得上云这件事情应该是可行的。
+
+standby状态下本地机资源消耗为：
+PS C:\WINDOWS\system32> docker stats --no-stream
+
+CONTAINER ID   NAME                             CPU %     MEM USAGE / LIMIT     MEM %     NET I/O           BLOCK I/O         PIDS
+
+xxx            ebo-ai-home-realtime-assistant   3.48%     186MiB / 15.48GiB     1.17%     4.51GB / 766MB    8.57MB / 0B       xx
+
+
+xxx            ebo-ai-home-ebo-engine           18.25%    177.9MiB / 15.48GiB   1.12%     14.4GB / 44.1GB   49.6MB / 2.09GB   xx
+
+
+xxx            ebo-ai-home-homeassistant        0.00%     337.3MiB / 15.48GiB   2.13%     1.21GB / 1.02GB   228MB / 1.05MB    xx
+
+
+主要原因有这几点：
+
+1. AWS 那边从 Internet 流向 EC2 的流量是不收费的。我们这边最大的开销主要是进来的带宽，而从 EC2 流出到 Internet 的流量其实真没有多少。
+2. CPU 消耗确实还是个问题，不过 CPU 这边目前正在排查。-补充，Docker 这个 CPU% 的算法里，通常 100% ≈ 持续占满 1 个可见的逻辑 CPU/vCPU，多核机器是可以超过 100% 的。Docker CLI 的计算代码也是按 online CPUs 去计算这个百分比。现在三个容器是：homeassistant 0.41% + ebo-engine 21.44% + realtime-assistant 4.40% = 26.25%。也就是说，在截图这一时刻，大约相当于：0.2625 个 CPU core 的持续计算量。
+
+如果是租EC2, 按最常用、价格比较低的 us-east-1（N. Virginia）+ Linux + 24×7 每月 730 小时 + 50 GB gp3 SSD + 1 个公网 IPv4 估。
+| 方案           |     CPU / RAM |       EC2/月 | 加 50GB EBS + IPv4 后约 | 我的判断      |
+| ------------ | ------------: | ----------: | -------------------: | --------- |
+| `t3a.medium` | 2 vCPU / 4 GB |  **$27.45** |            **$35/月** | 最便宜，可以先试  |
+| `t3a.large`  | 2 vCPU / 8 GB |  **$54.90** |            **$63/月** | RAM 更宽裕   |
+| `c7i.large`  | 2 vCPU / 4 GB |  **$65.15** |            **$73/月** | 持续 CPU 更稳 |
+| `m7i.large`  | 2 vCPU / 8 GB |  **$73.58** |            **$81/月** | 我比较推荐     |
+| `c7i.xlarge` | 4 vCPU / 8 GB | **$130.31** |           **$138/月** | 目前看明显偏大   |
+
+嘶，还是贵啊，肉疼。
+如果按照两个docker(2个container 全天24小时跑， home assistance 根本不用上去)上云去推演的话，继续沿用前面的条件：Linux/x86、AWS us-east-1、24×7，一个月按 730 小时算。 
+| 部署方式                  |              配置 |  24×7 月计算费 |                 加公网 IPv4 后大约 |
+| --------------------- | --------------: | ---------: | ---------------------------: |
+| Fargate，一个 Task 放两个容器 | 0.5 vCPU / 1 GB | **$18.02** |                   **$21.67** |
+| Fargate，一个 Task 放两个容器 | 0.5 vCPU / 2 GB | **$21.27** |                   **$24.92** |
+| Fargate，一个 Task 放两个容器 |   1 vCPU / 2 GB | **$36.04** |                   **$39.69** |
+| Fargate，一个 Task 放两个容器 |   1 vCPU / 4 GB | **$42.53** |                   **$46.18** |
+| EC2 `t3a.medium`      |   2 vCPU / 4 GB | **$27.45** | 约 **$35**，含 50 GB gp3 + IPv4 |
+
+所以整体来看，上云这件事情没准是可行的。
