@@ -26,3 +26,27 @@ AWS DevOps Agent 确实可以做成“自动触发调查”，并不是每次都
 跟本地的 log 对比来看，本地的 log 非常简单，就是时间戳加上后面真正的一大堆 message。但在 CloudWatch 上有一大堆信息，虽然有用，但其实只有 deep dive 的时候才用得上，确实会牺牲可读性。
 
 往下滑半天，一整页拆开来才看那么七八条 message。有用确实是有用，但真的好冗余啊。 AWS，你真的不考虑出一个省流版吗？-啊，孤陋寡闻了，人家 AWS 本来就没打算让人去看这些 message。人家已经把一些什么 anomaly detection configuration 这种东西给加上了，压根就没打算让人类去读原始的 raw log。
+
+---
+
+算帐单算的脑袋疼，除了一开始做好心理准备的fargate， 其他大大小小的配套设施也都要产生费用。-哎呦，这么算，还不如买个 Raspberry Pi 在本地跑呢。哎呀，脑袋疼，脑袋疼，脑袋疼。
+
+下表按 1 vCPU / 4 GiB、其余资源和实测速度不变计算，采用按量价格。官方单价来源为 [Fargate 区域目录](https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonECS/current/ca-central-1/index.json)、[CloudWatch 区域目录](https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonCloudWatch/current/ca-central-1/index.json)、[VPC 区域目录](https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonVPC/current/ca-central-1/index.json)。
+
+| 费用项 | 数量与单价 | 估算 USD/月 |
+|---|---|---:|
+| Fargate CPU | 1 × 730 小时 × $0.04456/vCPU小时 | **32.53** |
+| Fargate 内存 | 4 × 730 小时 × $0.004865/GiB小时 | **14.21** |
+| 公网 IPv4 | 1 个 × 730 小时 × $0.005/小时 | **3.65** |
+| Container Insights Enhanced | 212 条活跃时间序列 × $0.07/指标月 | **14.84** |
+| 应用自定义指标 | 4 条 × $0.30/指标月，未扣免费额度 | **1.20** |
+| 两路应用日志写入 | 约 0.355 GiB/月 × $0.55/GB | **0.20** |
+| 应用和性能日志存储 | 应用保留 14 天，性能日志当前保留 1 天；按未压缩字节保守估算 | **不足 0.01** |
+| ECR 私有镜像存储 | 约 0.53 GiB × $0.10/GB月，向上取整 | **约 0.06** |
+| Secrets Manager | 2 个 Secret × $0.40/月 | **0.80** |
+| EFS、备份、少量密钥及 Secret 请求 | 当前文件量很小；详见增长模型 | **当前规模约 0.01 以内** |
+| **上述小计，不含互联网出站** | 未扣 CloudWatch 免费额度；分项四舍五入 | **约 67.50** |
+| 网络出站：100 GB 共享免费额度可用 | 以 Task 发送速率近似估算 | **约 9.7–11.1** |
+| 网络出站：免费额度已被其他资源用完 | 同样流量按完整阶梯单价估算 | **约 18.7–20.1** |
+| **合计：免费出站额度可用** | | **约 77–79** |
+| **合计：免费出站额度不可用** | | **约 86–88**
