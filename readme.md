@@ -554,7 +554,7 @@ emmmmm, 半斤八两，Fargate Auto Scaling 这个优势其实没什么用，因
 
 真的得重构。基本上确定了，一个 Fargate task 带两个 container。
 
-关于各种 log 什么的，我还是得再去看一下用什么方法能接到一个带有 CloudWatch Agent 或者类似的东西上。
+关于各种 log 什么的，我还是得再去看一下用什么方法能接到一个带有 CloudWatch Agent (补充一下：CloudWatch Agent 它就是一个收集器，是没有 AI 能力的。而 AWS 那边，DevOps Agent 是有 AI 能力的，它是按照一个 Agent 运行的时间来付费，具体来说就是 30 美刀一小时) 或者类似的东西上。
 
 重构吧，与其让 Codex 改现在的代码，还不如让它朝着在云上运维的方向去重构。
 
