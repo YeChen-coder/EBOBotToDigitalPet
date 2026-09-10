@@ -492,8 +492,11 @@ xxx            ebo-ai-home-ebo-engine           18.25%    177.9MiB / 15.48GiB   
 
 xxx            ebo-ai-home-homeassistant        0.00%     337.3MiB / 15.48GiB   2.13%     1.21GB / 1.02GB   228MB / 1.05MB    xx
 
+-等一下，等一下，这边刚注意到一个巨大的问题：就是 ebo-engine 这个 container，它输入 14.4G，输出 44.1G，真的假的？不是，它输出不该这么多呀。那个云不云的待会再说，先把这个事情解了吧。-做了一些调查：首先说那个 44.1，往外输出的 44.1 GB 注意它是所有 container 往外发的，包括在 Docker 内部网络发的和给 Internet 发的。
 
-主要原因有这几点：
+两个 container 内部通信是蛮 heavy 的一个东西，但是反正同一个AZ， private-IP/ENI 之间的数据传输是免费的， 那么fargate task *2 也可以，这个不是问题点。 （跨AZ就别想了，内部通信量太大了。）-其实我又想到一件事情，我好像还是不太对。当时一开始之所以把它搞成三个 container，是因为我不太想让它做成一个只能接固定设备的东西，本来就是想搞得非常灵活：随便一个摄像头，或者带麦克风、有办法输出声音的带摄像头设备，都能给它接进去。但是如果要上云的话，理论上来说是可以把当前的 ebo-engine 再加上 realtime assistant 这两个 container 合并成一个 container 在云上运行。不过这样可能不太利于 troubleshooting，而且真这么做的话，架构就要大改了。
+
+能上云的理由主要有这几点：
 
 1. AWS 那边从 Internet 流向 EC2 的流量是不收费的。我们这边最大的开销主要是进来的带宽，而从 EC2 流出到 Internet 的流量其实真没有多少。
 2. CPU 消耗确实还是个问题，不过 CPU 这边目前正在排查。-补充，Docker 这个 CPU% 的算法里，通常 100% ≈ 持续占满 1 个可见的逻辑 CPU/vCPU，多核机器是可以超过 100% 的。Docker CLI 的计算代码也是按 online CPUs 去计算这个百分比。现在三个容器是：homeassistant 0.41% + ebo-engine 21.44% + realtime-assistant 4.40% = 26.25%。也就是说，在截图这一时刻，大约相当于：0.2625 个 CPU core 的持续计算量。
@@ -508,7 +511,9 @@ xxx            ebo-ai-home-homeassistant        0.00%     337.3MiB / 15.48GiB   
 | `c7i.xlarge` | 4 vCPU / 8 GB | **$130.31** |           **$138/月** | 目前看明显偏大   |
 
 嘶，还是贵啊，肉疼。
+
 如果按照两个docker(2个container 全天24小时跑， home assistance 根本不用上去)上云去推演的话，继续沿用前面的条件：Linux/x86、AWS us-east-1、24×7，一个月按 730 小时算。 
+
 | 部署方式                  |              配置 |  24×7 月计算费 |                 加公网 IPv4 后大约 |
 | --------------------- | --------------: | ---------: | ---------------------------: |
 | Fargate，一个 Task 放两个容器 | 0.5 vCPU / 1 GB | **$18.02** |                   **$21.67** |
@@ -518,3 +523,15 @@ xxx            ebo-ai-home-homeassistant        0.00%     337.3MiB / 15.48GiB   
 | EC2 `t3a.medium`      |   2 vCPU / 4 GB | **$27.45** | 约 **$35**，含 50 GB gp3 + IPv4 |
 
 所以整体来看，上云这件事情没准是可行的。
+
+emmmmm, 半斤八两，Fargate Auto Scaling 这个优势其实没什么用，因为我项目它不是一个能横着扩的东西。综合各方面信息考量一下，我觉得还是得用 Fargate。因为在运维方面，它相比起租一个 EC2 会省心很多。
+
+我们这边是按照 Fargate 的方案来做的：一个 Task 放两个容器，配置选 0.5 vCPU + 2 GB，当然也得加公网 IPv4，不然网络流量就没法搞了。
+
+这么考虑的一个主要原因在于：EC2 那边哪怕考虑到安装 Docker 自身的计算开销，其实仍然会比一个 Fargate Task 更 cost-effective。但这种情况下，维系 EC2 本身的健康程度又是个问题。
+
+需要考虑的事情实在太多了，什么事情一远程起来，麻烦就是指数级增加。我主要是不太想对 Linux 本身做运维，Linux 自带的各种蛋疼事也少不了。
+
+另外，刚才讲的 AWS DevOps Agent，再加上 CloudWatch Agent，他们更多是偏向 Resource 层面的，肯定是不能直接对我这种特定的 Application 起效。所以我这边的实际工作量还是蛮大的，他们的框架绝对值得参考，但具体用起来，仍然需要一个反复调试的过程。
+
+
