@@ -1,3 +1,9 @@
+开了branch 把项目移到AWS上去了，因此引发的一连串问题和对解决方案的探索。
+
+---
+
+AWS 今年其实已经推出了他们那边的 AWS DevOps Agent ，而且在业界还挺权威的。AI 那边的意思就是，大家都照着这个东西抄。（读他们的文章确实挺有道理的， 各种输入和架构本身作为 knowledge graph ）
+
 AWS DevOps Agent 确实可以做成“自动触发调查”，并不是每次都要你手动进去点。AWS 官方目前支持几种入口：内置的 ticketing/incident 集成、webhook，以及手动启动；官方文档明确举例说可以通过 PagerDuty ticket、Grafana alarm 等 webhook 事件自动触发 investigation。它也会结合 CloudWatch、Datadog、Grafana、New Relic、Splunk 等 observability 数据做调查。AWS DevOps Agent = 大约 $29.88/active-agent-hour 的 AI SRE/诊断工程师。
 
 不过实际用起来也没人说一有点什么 incident，就立刻开 AWS 的 DevOps Agent。
