@@ -124,4 +124,8 @@ Astra用token和水一样，让它写个文档，呼，5-hours limitation reache
 
 连接断开、转写失败和文件保存失败。
 
-上线后都在 CloudWatch → /ebo-cloud/assistant 查看，保留 14 天
+上线后都在 CloudWatch → /ebo-cloud/assistant 查看，保留 14 天。
+
+不是， Tibo ，你真的假的？这做着验证，中途告诉我“hit my limitation”了，然后就停了。
+
+大哥，你先把验证做完啊！哪有中途撂挑子不干的呀？
