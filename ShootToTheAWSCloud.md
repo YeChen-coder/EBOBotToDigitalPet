@@ -102,3 +102,11 @@ AWS DevOps Agent 确实可以做成“自动触发调查”，并不是每次都
 
 尤其是对于 IT 行业，coding agent 一出来，很多东西都变得飞快。传统行业可能还好，很多东西相对固定、经久不衰；但 IT 这边三天一颗原子弹、两天一个震惊，整个更新换代的速度，人类个体已经很难跟得上了。
 
+---
+
+云上输出的log要改，当前是没有把transcript作为一项输出到cloudwatch的，给监测运行情况增了很多麻烦，log insight搜不到。
+
+Astra用token和水一样，让它写个文档，呼，5-hours limitation reached.
+
+
+
