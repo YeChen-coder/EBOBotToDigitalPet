@@ -147,3 +147,12 @@ Astra用token和水一样，让它写个文档，呼，5-hours limitation reache
 他们内部的架构是一个主 Agent 带一堆 Sub-Agent：主 Agent 负责判断问题类型，然后分发给特定的 Sub-Agent 去执行。
 
 我觉得市面上很快就会出现成熟度比较高的同类产品。对于中小型团队或低复杂度架构来说，这种方案应该相对好做。市面上总有聪明人能搞出东西来，我纯懒狗，就单纯想直接抄现成的 （不是，是想复刻伟大的思想）。
+
+---
+
+infra真贵啊，那是真贵啊， 就一个 1 cpu + 4G 的fargate task， 跑了两天要了五刀。 又脑袋疼又肉疼，心脏不好血压高。
+
+<img width="420" height="282" alt="image" src="https://github.com/user-attachments/assets/4bfdfcb2-0c0d-437f-8bf3-24cf2a58ff9d" />
+
+不行，4G改2G去了。
+
