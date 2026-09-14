@@ -260,7 +260,7 @@ The world is full of buzzwords, especially in IT and finance. I understand why p
 
 我现在当前这个 Diagnostic Agent，我承认确实是很聪明地取巧了，直接用的 Codex CLI。所以当看到 ChatGPT 新推出这个 Agent API 之后，就去搜了这方面的内容。
 
-我不确定后续的项目需不需要用到（因为毕竟是真的在用的东西，实用至上，写简历排第二），但为了防止以后忘了，还是先把能记下来的东西写在这里，当一个 note 用：
+我不确定后续的项目需不需要用到（因为毕竟是真的在用的东西，实用至上，写简历排第二；大概只会搭一个小的，跑通概念和流程即可），但为了防止以后忘了，还是先把能记下来的东西写在这里，当一个 note 用：
 
 1. Sandbox
 
