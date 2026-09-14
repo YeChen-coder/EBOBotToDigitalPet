@@ -217,13 +217,13 @@ https://clair-chen.yechenworking.workers.dev/
 
 ---
 
-发现了一个他讲的我能听进去的宝藏 YouTube 博主，叫 Caleb write Code。
+发现了一个他讲的我能听进去的宝藏 YouTube 博主，叫 Caleb writes Code (https://www.youtube.com/watch?v=XvmixEXPT3Q)。
 
-很神奇的是，他讲事情的思维正好就是我思考的思维，即他是从最原始的问题开始讲起的。
+很神奇的是，他讲事情的思维正好就是我思考的思维，即他是从最原始的问题开始讲起的，所以跟起来异常丝滑。
 
-因为当我去理解世界的时候，所有东西都是一步步发展过来的。但我们现在看到的很多东西都已经是一个成熟的成品，前面已经经历了一大串各种各样的演进，我们看到的只是最终结果。
+因为当我去理解世界的时候，所有东西都是一步步发展过来的。但我们现在看到的很多东西都已经是一个成熟的成品，前面已经经历了一大串各种各样的各个方向的探索和演进，我们看到的只是最终结果。
 
-我在这方面一直有困难，很难接受直接把一个现成的成熟结果塞给我，上面带着各种各样的功能，然后跟我说"直接用吧/从这三个里面随便挑一个都能实现需求所以随便选"。
+我在这方面一直有困难，很难接受直接把一个现成的成熟结果塞给我，上面带着各种各样的功能，然后跟我说"直接用吧/从这三个里面随便挑一个都能实现需求所以随便选"。（其实也有可能是单纯的智商不够记不住是干嘛的，所以需要拿其他信息辅助记忆。）
 
 I found it really hard to understand what all the functions are used for, not to mention to analysis pros and cons. Due to knowledge limitations and experience, I really don't understand why there are so many diverse features, different tech, or things like that. To me, they all work the same.
 
