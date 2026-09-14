@@ -171,7 +171,7 @@ infra真贵啊，那是真贵啊， 就一个 1 cpu + 4G 的fargate task， 跑�
 
 ---
 
-一会儿要赶车，所以快速逼叨两句。
+一会儿要赶车，所以快速叨逼叨两句。
 
 昨天刷视频的时候看到一个关于生产端运维的内容。他们把 Claude tag 放进 channel 里做自动化告警响应，比如某个 API 成功率下滑了 2%，channel 里一旦有报警，Claude 就会自动做一些调查并把 PR 写出来，推给值班监控的人。值班人员扫一眼 approve 之后再合上去，之后还可以自定义让 Claude 监控随后 10 分钟的情况，确认稳定才算解决。(也顺手查了一下Claude tag的一些东西。我说怎么之前没刷到呢，首先它是今年 6 月份出来的，但在中文社区这边，其实是到 8 月初才渐渐有人讨论。最主要的是它确实有门槛，倒还不是 Claude Code subscription 这种门槛，而是它本身开通就需要 50 刀。-补充一下，它是因为那个 Cloud Tag 是给 Enterprise 和 Cloud Team 准备的。但是 Cloud Team 起码需要两个 seat，一个人是 25 刀，所以两个人就是 50 刀，这才有了这个 50 刀的门槛费。那我倒明白了为什么没有那么多人讲它，因为大多数人做的还是 to C 的东西，没有那么多 to B 的 team 在做这件事情)
 
@@ -181,13 +181,13 @@ infra真贵啊，那是真贵啊， 就一个 1 cpu + 4G 的fargate task， 跑�
 
 所以，当时搭的工作流大概是：
 
-• 第 0 层：单纯看 container 在不在跑，没启动就直接拉起来（如果起不来那肯定是出事了）
+• 第 0 层：单纯看 container 在不在跑，没启动就直接拉起来（如果起不来那肯定不能正常服务了， 就先重启， 重启三回还是不行那就是出大事了，需要去诊断）
 
 • 第 1 层：让 Codex 比较底层的模型（比如 5.5 Luna）去做初步排查
 
-• 第 2 层：让 Codex 的 Astra 去深度排查
+• 第 2 层：让 Codex 的 Astra 去深度排查 - 补：这个得降级，没办法，Astra太耗token了，经不起这么消耗。
 
-我看了一下报告，虽然显示出过几次问题，但也没调查出什么结果。可能系统本身很简单也很稳定，很多时候只是分钟级别的偶发抖动，刚把 Tier 1 叫起来还没查出结果，系统自己就恢复了。跑了两天其实真没什么事，也没积累下什么东西。
+我看了一下报告，虽然显示出过几次问题，但也没调查出什么结果（就是有时候它真没事，就单纯是我这边觉得本地的HomeAssistant这个container没用，然后给它手动暂停。结果它那边显示说，某一个 container 莫名其妙暂停了 85 秒，然后没有分析出结果。但其实就是我手动关的，所以这真没事，确实没问题）。可能系统本身很简单也很稳定，很多时候只是分钟级别的偶发抖动，刚把 Tier 1 叫起来还没查出结果，系统自己就恢复了。跑了三天其实真没什么事，也没积累下什么东西。-补：后来让他给我搞了一个看板，每一分钟刷新一次，告诉我出了什么事。另外，我正在看Astra写的那个好长的 Diagnostic Agent design 文档，真的好长啊(不过文档写的是真好啊，真详实，每个字段代码在哪都写的清清楚楚，好久没看到这么舒服的技术文档了，用Astra写文档太值得了，虽然干掉了刚冷却好的5hour limit)。
 
 不过重点在于，当我做这个的时候就意识到：如果用 diagnostic agent 去确保云端或本地的 ebbot 程序正确，那么再往下一层，谁来确保这个 diagnostic agent 本身是对的？如果 diagnostic agent 自己先挂了，那我自然就无法保证它负责的 ebbot service 是正常的。
 
@@ -199,13 +199,13 @@ anyway了，真得走了，错过又要等半个小时。
 
 ---
 
-Grokbot 确实好使，真好使啊！它完美地解决了 ChatGPT token 不够用的问题。
+Grokbot 确实好使，真好使啊！它完美地解决了 ChatGPT token 不够用的问题。-另，之后跨越半个地球让家人用上了grok bot, 哇，登录上去了就不再依赖外网环境能用了，虽然会慢很多，但是能不跨越Great Fire Wall就已经很好了。以及， 360真该死啊，欺负中老年人不懂电脑，给装了一堆360系软件，广告一堆。
 
 真好啊！一个完全隔离的小电脑。马斯克，你真的、真的、真的造福人类！另，火星那个事情麻烦抓紧点儿，去火星真的是我的人生课题之一。
 
 在 Cloudflare 上搞了一个个人网页，全程用 Grokbot 帮我从注册账号开始弄的。
 
-虽然它那个页面设计一开始搞得我脑袋疼，太丑了，第一版完全是想象不到的丑。不过现在这一版丑萌丑萌的，虽然我也觉得挺对不起观众的眼睛，但对我个人来说，我觉得记忆点比克制和低调更重要，所以 I will go with this one。不过那个文案得改。现在起码这边的中文文案实在是太差劲了，太 AI 了，看得我脑袋疼。不行，这个得改，得改成说人话的版本。
+虽然它那个页面设计一开始搞得我脑袋疼，太丑了，第一版完全是想象不到的丑。不过现在这一版丑萌丑萌的，虽然我也觉得挺对不起观众的眼睛，但对我个人来说，我觉得记忆点比克制低调更重要，所以 I will go with this one。不过那个文案得改。现在起码这边的中文文案实在是太差劲了，太 AI 了，看得我脑袋疼。不行，这个得改，得改成说人话的版本。
 
 而且我也不太乐意在这种个人网站上花太多时间，我又不是做前端的，所以还是把具体的事情做好吧。
 
@@ -215,4 +215,66 @@ Grokbot 确实好使，真好使啊！它完美地解决了 ChatGPT token 不够
 
 https://clair-chen.yechenworking.workers.dev/
 
+---
 
+发现了一个他讲的我能听进去的宝藏 YouTube 博主，叫 Caleb write Code。
+
+很神奇的是，他讲事情的思维正好就是我思考的思维，即他是从最原始的问题开始讲起的。
+
+因为当我去理解世界的时候，所有东西都是一步步发展过来的。但我们现在看到的很多东西都已经是一个成熟的成品，前面已经经历了一大串各种各样的演进，我们看到的只是最终结果。
+
+我在这方面一直有困难，很难接受直接把一个现成的成熟结果塞给我，上面带着各种各样的功能，然后跟我说"直接用吧/从这三个里面随便挑一个都能实现需求所以随便选"。
+
+I found it really hard to understand what all the functions are used for, not to mention to analysis pros and cons. Due to knowledge limitations and experience, I really don't understand why there are so many diverse features, different tech, or things like that. To me, they all work the same.
+
+It's more about: if I want to achieve something, between the toolsets and platforms I can use, there are multiple ways to achieve it.
+
+For instance, if I want a program to be standby in the cloud, I can think of at least three solutions:
+
+1. Fargate to run a Docker container
+2. If the requests are really random, just use a Lambda function. Sometimes when requests are so infrequent, I don't even think it's worth a Fargate instance or keeping something running in the cloud to maintain it, so just use Lambda and call it when needed
+3. An EC2 instance or an application server
+
+Just because there are already so many things in the cloud or in any mature product, people might find it overwhelming. There are so many tools, but they often serve similar functions. For instance, S3, Databricks, and all the RDS services all serve as data storage in some way. They are all places to store data. So what's the difference? Why do people choose this instead of that?
+
+Especially when I'm new to a field: I know there are multiple choices, but I don't know which to pick. Nothing feels distinctly different to me, so I couldn't understand why people prefer one over another.
+
+But this YouTuber really explains things starting from the problem itself. Every practical advancement starts from a need, or you could call it a problem. It usually means the old way did not work: people face gaps, so they find a solution. That is generally how I take in knowledge.
+
+When I look back, part of it might be that I just do not want to learn too many unnecessary things. On the flip side, that mindset makes it harder for me to deal with unfamiliar stuff. To me, reinventing the wheel is never a wise choice: if a wheel already exists, use it. Do not make it from scratch yourself. Whatever you write is likely not going to have the polish of something others have already battle-tested for years. There is no way, at least for me, to beat that.
+
+Looking back at the code I wrote during university, it is a bit embarrassing. At that time, ChatGPT and all the modern coding agents were not prevalent or powerful yet. We might have been among the last students who wrote code using the ancient method, and I do not think the code I wrote back then was particularly useful. I had plenty of ideas and problems I wanted to solve with tech, but I was not smart enough. I got completely blocked by algorithms, especially mapping issues and maze problems (yep, I live in here for about two years, but still need to locate with Google Maps. Anything related to geo is super harsh on me.). That was one of the main reasons I retreated.
+
+I really wanted to accomplish a lot in university, but between my limited capacity and having interests spread far too wide, I made nothing work. It felt ironic because around that time, an article about Stanford students caught my attention: it mentioned that students at Stanford felt they could hack anything. I really wanted to be that kind of person, but I could not. There were just so many programming languages to juggle: in school we started with C and C++, then Java, then I learned Python, plus front-end technologies like HTML , JS and CSS.
+
+Looking back now at what happened in university, it always makes me realize it (the degree) was never designed to be that hard. It was just me being overly difficult on myself.
+
+Sorry, this is getting so far off track. What I really want to say is that I like how this YouTuber illustrates things, starting with the problem. Because there is a problem, people make new things to fix it, and then another problem occurs, so people make even better things to deal with it. Layer by layer, the product, platform, or tool becomes the one we see today. It really helps me understand and remember why specific features are useful.
+
+The world is full of buzzwords, especially in IT and finance. I understand why people in IT use buzzwords: to make their explanations more accurate or memorable. But at the same time, what they do in finance is just make people confused, which feels like a deliberate action. -I shouldn't say that. It is just really hard to memorize tons of new words, so sorry, that was just me complaining.
+
+---
+
+去查了chatgpt 的 agent api 的内容， 有些东西我觉得还是要先提一下。
+
+我现在当前这个 Diagnostic Agent，我承认确实是很聪明地取巧了，直接用的 Codex CLI。所以当看到 ChatGPT 新推出这个 Agent API 之后，就去搜了这方面的内容。
+
+我不确定后续的项目需不需要用到（因为毕竟是真的在用的东西，实用至上，写简历排第二），但为了防止以后忘了，还是先把能记下来的东西写在这里，当一个 note 用：
+
+1. Sandbox
+
+Normally when we use Codex, it maintains a sandbox on our personal computer. However, if we use the Agent API, there still needs to be a sandbox. This sandbox can be self-hosted, or it can be OpenAI-hosted. If we choose self-hosted, there are multiple ways to provide it.
+
+The core principle about the sandbox is that it doesn't need to be so thorough or fully prepared before the agent session works. This is more realistic because we don't know what the agent needs when it actually runs. Preparing everything beforehand would be too complicated, tricky, and create a lot of friction before development. What the agent actually needs is just a platform or an environment open enough to install whatever it requires, while remaining under the environment's restrictions. This makes the whole sandbox setup much more flexible and practical.
+
+2. Sub-agents
+   
+Based on the OpenAI documentation, the use of sub-agents and their maximum number can be controlled by parameters set by users/developers. However, the actual usage and decision to invoke sub-agents are determined by the main agent itself, not explicitly decided by developers, users, or any human being.
+
+3. The naming of the API
+
+I'm more familiar with HTTP APIs or traditional APIs, where user post a request and get a response (a 1:1 interaction). In that sense, calling this an "Agent API" felt confusing at first.
+
+In practice, it operates as a session: when we post a request to the Agent API, we actually start a session. Within this session, there can be multiple turns, sub-agents, context compacting, and sub-agent orchestration, all handled by OpenAI internally rather than by ourselves.
+
+This also explains recent commentary suggesting that companies focusing on agent orchestration over the past six months may see their value diminish. The LLM providers have built this natively, and naturally, they can execute it better than anyone else. They control the source, the infrastructure, and the inference process, so their advantage goes without saying.
