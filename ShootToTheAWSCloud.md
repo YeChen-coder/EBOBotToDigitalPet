@@ -148,7 +148,6 @@ OpenAI 那边不是又出了 Chat 模型嘛，我扫了一眼，觉得不用改�
 
 不过昨天还是前天，看到 ChatGPT 他们新出了一个 Agent 的 API，我觉得这个东西绝对有得搞。
 
-
 ---
 
 昨天看了中国 DevOps 社区的直播，是腾讯的人在讲他们运维 Agent 的落地实践。
@@ -160,6 +159,8 @@ OpenAI 那边不是又出了 Chat 模型嘛，我扫了一眼，觉得不用改�
 他们内部的架构是一个主 Agent 带一堆 Sub-Agent：主 Agent 负责判断问题类型，然后分发给特定的 Sub-Agent 去执行。
 
 我觉得市面上很快就会出现成熟度比较高的同类产品。对于中小型团队或低复杂度架构来说，这种方案应该相对好做。市面上总有聪明人能搞出东西来，我纯懒狗，就单纯想直接抄现成的 （不是，是想复刻伟大的思想）。
+
+补充一下：想起来他们在直播中其实很强调"AI 工时"这么一个概念。我当时从技术上没有多想，但后来想想，这个东西在公司、在 organization 里面确实值得强调。虽然个人开发可能觉得没用，但在公司里，尤其是业务组里，成果需要被看见和向上/上上/上上上汇报。而所谓 AI 工时，就是 AI 本身所花的 token，以及人员花费工时去构建这个东西所包含的价值，这些到底该怎么体现出来，来证明ROI是好的以提供继续做这件事情的合法性。
 
 ---
 
@@ -278,3 +279,5 @@ I'm more familiar with HTTP APIs or traditional APIs, where user post a request 
 In practice, it operates as a session: when we post a request to the Agent API, we actually start a session. Within this session, there can be multiple turns, sub-agents, context compacting, and sub-agent orchestration, all handled by OpenAI internally rather than by ourselves.
 
 This also explains recent commentary suggesting that companies focusing on agent orchestration over the past six months may see their value diminish. The LLM providers have built this natively, and naturally, they can execute it better than anyone else. They control the source, the infrastructure, and the inference process, so their advantage goes without saying.
+
+- "AI Wrapper" 这个词是稍显贬义的，所以不要乱用。它是用来形容产品层面的词，而像 Prompt、Context Harnessing、Engineer 这些都是工程方法上的词，实际上更偏技术。但 Wrapper 那边，它是拿来跟一个纯的大模型（Large Language Model），或者说纯的 OpenAI API 去做对比的。再强调一遍，千万不要乱用，因为它确实带点贬义，是在暗示对方自己没有多少核心技术，只是在外面套了一层界面和一些 Prompt。不过从 Tech 角度来说，其实大家现在也都是这么做的，因为最里面的东西都是LLM API。 正所谓人和人之间的区别，比人和狗的区别都大，所以wrapper和wrapper之间，亦有优劣之分。
