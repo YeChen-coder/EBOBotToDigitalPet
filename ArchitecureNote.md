@@ -1,9 +1,8 @@
-这里面就是写一些我对于目前看到的东西的理解。
-
-其实不保证正确，也不保证精准，反正就是我个人的一个理解吧。能记住的都是好的。
+这里面就是写一些我对于目前看到的东西的理解，辅助记忆。
 
 ---
-对multi turn， 真正请求回答的代码只是 self.send({"type": "response.create"})
+
+对Openai realtime 2.1 model, 它里面的 multi turn， 真正请求回答的代码只是 self.send({"type": "response.create"})
 
 意思是请根据当前会话里的内容，生成下一次回答。
 
