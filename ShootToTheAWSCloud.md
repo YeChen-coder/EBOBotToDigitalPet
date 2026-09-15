@@ -290,7 +290,7 @@ Diagnostic Agent 确实得大改。
 
 <img width="1064" height="350" alt="image" src="https://github.com/user-attachments/assets/ad786b51-4b02-49e0-a008-446e367866a5" />
 
-具体来说，我看待 AI 或任何程序都有一个基本原则：它们必须是有用的。这个“有用”具体有两个定义：
+具体来说，from my point of view, 看待 AI 或任何程序都有一个基本原则：它们必须是有用的。这个“有用”具体有两个定义：
 
 1. 辅助人类决策：包括但不限于提供有效信息、过滤无关信息，从而减少人脑 context window 的输入消耗。
    
@@ -304,4 +304,6 @@ Diagnostic Agent 确实得大改。
 
 估计这是个大活儿，刚冷却好了 5 个小时的 limit，估计又要被干没了。
 
+就是两边在出账单：一个是 AWS 云端那边，还有一个是 OpenAI Developer Platform 那边（大家 AI 的 token 消耗）。
 
+现在我隔个两天就得上去看一眼，这样不太好。不过估计得等下一轮了，现在这一轮上面的活估计也就将将干完的样子
