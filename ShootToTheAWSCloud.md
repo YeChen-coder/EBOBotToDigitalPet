@@ -281,3 +281,27 @@ In practice, it operates as a session: when we post a request to the Agent API, 
 This also explains recent commentary suggesting that companies focusing on agent orchestration over the past six months may see their value diminish. The LLM providers have built this natively, and naturally, they can execute it better than anyone else. They control the source, the infrastructure, and the inference process, so their advantage goes without saying.
 
 - "AI Wrapper" 这个词是稍显贬义的，所以不要乱用。它是用来形容产品层面的词，而像 Prompt、Context Harnessing、Engineer 这些都是工程方法上的词，实际上更偏技术。但 Wrapper 那边，它是拿来跟一个纯的大模型（Large Language Model），或者说纯的 OpenAI API 去做对比的。再强调一遍，千万不要乱用，因为它确实带点贬义，是在暗示对方自己没有多少核心技术，只是在外面套了一层界面和一些 Prompt。不过从 Tech 角度来说，其实大家现在也都是这么做的，因为最里面的东西都是LLM API。 正所谓人和人之间的区别，比人和狗的区别都大，所以wrapper和wrapper之间，亦有优劣之分。
+
+---
+
+Diagnostic Agent 确实得大改。
+
+看一下下面的截图，这是它当前的 health dashboard，里面根本给不出我需要的信息。
+
+<img width="1064" height="350" alt="image" src="https://github.com/user-attachments/assets/ad786b51-4b02-49e0-a008-446e367866a5" />
+
+具体来说，我看待 AI 或任何程序都有一个基本原则：它们必须是有用的。这个“有用”具体有两个定义：
+
+1. 辅助人类决策：包括但不限于提供有效信息、过滤无关信息，从而减少人脑 context window 的输入消耗。
+   
+2. 创造价值：这比辅助决策更抽象，本质上是增加通向一个“有价值产品”的概率。这里的价值可以是声誉（名气上的价值，不管是面向市场还是身边的人），也可以是面向市场（To B 或 To C）的金钱回报，无论哪种都行。有些idea虽然精彩，但是因为其本身过于薄弱，很容易被原厂一个更新给推平，或者就是太atom了只能作为某个点存在而不是一个可用的东西，那也不能算是有用。
+
+（比如在Claude code刚刚推出connector - 这个的记忆很清楚，那个时候就是因为 Claude Code 第一个推出可以连custom Connector的这个功能的，所以才从chatgpt 专去订阅的Claude Code - MCP 概念刚出来的时候，给Rize.io做的local mcp server -https://github.com/YeChen-coder/RizeIO-LocalMCPServer。 后来RIZE.IO这家公司自己推行了官方MCP， 那就没什么好说的了，那时候做的MCP已经落到历史的尘埃中了，回想其价值，只能证明那时候我的网上冲浪速度真的很快且执行力爆棚-他们用的GraphQL api， 这里面有很大的麻烦。它跟普通的 API 不太一样：常规的REST API 返回所有的值，本地再去拿所需的内容做 filter；但 GraphQL API 对服务端更友好，所以本地做请求必须写明要什么值，服务端那边才会给。现在想起来头还是会疼，主要因为他们那个各种文档、各种参数真的是巨长，而且那个时候 Claude Code 真的没有那么聪明，现在回想还是很折腾。但站在现在这个阶段，原厂都出了。我自己因为价格因素，也不再用 Rize.io 这个软件了，所以很多东西就流失在时间的星海长河中了。）
+
+回到当前的 Diagnostic Agent，它的 visibility 做得很差：推给我大量内容，但我从中看不到任何有价值的信息。截图里只是其中两条，实际上每天都会产生十几条类似的内容，作用不大，反而加重了我的决策消耗。所以按这个逻辑，它必须大改。
+
+另外还有一些历史遗留问题：这个项目在 ebo-engine 那边，不论是因为登录认证（authentication）的限制，还是项目本身的功能机制，它都是 exclusive 的。同一个时间，云端和本地基本只能存在一个，否则就会断联，视频流一断，自然呼吸之类的东西就跑不了。虽然冲突后果没那么严重，顶多断一会儿，但既然顺手要改 Diagnostic Agent 的页面，那就让 Astra 把这些问题都整合起来，给我加上切换和关闭的流程。
+
+估计这是个大活儿，刚冷却好了 5 个小时的 limit，估计又要被干没了。
+
+
