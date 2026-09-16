@@ -318,6 +318,9 @@ Diagnostic Agent 确实得大改。
 
 <img width="1078" height="587" alt="image" src="https://github.com/user-attachments/assets/8a7b1b0e-820e-4678-9e9c-25639d9c94ff" />
 
+<img width="827" height="278" alt="image" src="https://github.com/user-attachments/assets/316c7405-502b-424e-a657-8cb0fa38f97a" />
+
+
 我这边判断系统有没有问题，其实更多不是看基础状态。基础状态很好判断，Astra 早就帮我写得挺好的了；核心还是看功能实现。所以我去排错、判断它是不是真有问题，关键是看有没有回答：如果一天下来都没有记录，大概率就是出问题了。因此我也把本地和云端的 transcribed 记录都放到了这个页面上，终于舒服了。
 
 这个其实对应了之前一直纠结的“有效信息”。实际上，Healthy Dashboard 迭代到现在已经是第三版了：
