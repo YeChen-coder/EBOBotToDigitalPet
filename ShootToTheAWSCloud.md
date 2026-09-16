@@ -314,7 +314,7 @@ Diagnostic Agent 确实得大改。
 
 老大，我们的钱包有救了！
 
-终于把本地跟云端包括但不限于日志、incident response、diagnose 这些杂事集中在一个页面上了。
+终于把本地跟云端的切换，以及本地+云端的不限于日志、incident response、diagnose 这些杂事集中在一个页面上了。
 
 <img width="1078" height="587" alt="image" src="https://github.com/user-attachments/assets/8a7b1b0e-820e-4678-9e9c-25639d9c94ff" />
 
