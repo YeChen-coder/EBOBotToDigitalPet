@@ -27,6 +27,6 @@
   - action: button.press
     metadata: {}
     target:
-      entity_id: button.ebo_forward
+      entity_id: button.fu_mu_jia_de_ebo_forward
     data: {}
   mode: single

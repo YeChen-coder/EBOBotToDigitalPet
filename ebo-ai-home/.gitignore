@@ -20,32 +20,16 @@ homeassistant-config/.cache/
 homeassistant-config/.ha_run.lock
 homeassistant-config/llmvision/*.db*
 
-# Public checkout: never commit real configuration or household runtime data.
-**/.env
+# Local checkpoints exclude credentials, editor locks and generated document QA.
 **/.env.*
 !**/.env.example
-**/secrets.yaml
-**/options.json
-**/*.pem
-**/*.key
-**/*.p12
-**/*.pfx
+**/~$*
 .pytest_cache/
 .ruff_cache/
-homeassistant-config/custom_components/
-homeassistant-config/media/
-homeassistant-config/www/
-homeassistant-config/llmvision/
-docs/_render*/
-docs/_build_ebo_guide/
 docs/_bilingual_build/*.json
 docs/_bilingual_build/*.pdf
+docs/_bilingual_build/artifact.md
 docs/_bilingual_build/reference.docx
-docs/_bilingual_build/render*/
+docs/_bilingual_build/reference_render/
+docs/_bilingual_build/render_*/
 docs/_bilingual_build/figures/
-docs/assets/private-*
-docs/assets/automation-entry.png
-docs/assets/dashboard-after.png
-docs/assets/dashboard-verified.png
-docs/assets/scripts-page.png
-docs/EBO_AI_新手使用手册.docx

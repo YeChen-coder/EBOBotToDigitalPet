@@ -1,0 +1,26 @@
+{
+  "id": "cloud-ebo",
+  "adapter": "aws-ecs",
+  "probe": "aws-ecs",
+  "enabled": true,
+  "maintenance": false,
+  "restartOnStall": false,
+  "aws": {
+    "connection": "aws-cloud",
+    "accountId": "123456789012",
+    "region": "ca-central-1",
+    "cluster": "ebo-cloud-lab",
+    "service": "ebo-cloud-lab",
+    "pollSeconds": 60,
+    "snapshotMaxAgeSeconds": 180,
+    "healthMaxAgeSeconds": 180,
+    "selfHealingSeconds": 300,
+    "recoverySeconds": 300,
+    "logWindowSeconds": 600,
+    "maxLogPages": 3,
+    "containers": [
+      { "name": "ebo-engine", "logGroup": "/ebo-cloud/engine", "streamPrefix": "ebo-engine/ebo-engine", "probe": "engine-health" },
+      { "name": "realtime-assistant", "logGroup": "/ebo-cloud/assistant", "streamPrefix": "realtime-assistant/realtime-assistant", "probe": "ebo-health" }
+    ]
+  }
+}

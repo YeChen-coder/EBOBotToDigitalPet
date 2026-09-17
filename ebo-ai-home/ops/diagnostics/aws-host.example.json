@@ -1,0 +1,12 @@
+{
+  "connections": {
+    "aws-cloud": {
+      "cliPath": "C:/Program Files/Amazon/AWSCLIV2/aws.exe",
+      "readProfile": "ebo-diagnostics-read",
+      "actionProfile": "",
+      "controlProfile": "",
+      "allowRuntimeControl": false,
+      "allowTaskReplacement": false
+    }
+  }
+}

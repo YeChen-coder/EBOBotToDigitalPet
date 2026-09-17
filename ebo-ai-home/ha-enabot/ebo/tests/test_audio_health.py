@@ -72,6 +72,79 @@ def test_player_mute_does_not_send_global_command():
 
 def test_startup_retry_respects_privacy_and_observer_generation():
     source = (Path(__file__).parents[1] / "ebo_bridge.py").read_text(encoding="utf-8")
-    watchdog = source.split("def _audio_watchdog", 1)[1].split("# ------------- AUDIO TX", 1)[0]
-    assert "and self.listen_on" in watchdog
-    assert "obs is self._audio_obs" in watchdog
+    recovery = source.split("def _recover_robot_audio", 1)[1].split("def connect_agora", 1)[0]
+    assert "self.listen_on" in recovery
+    assert "obs is not self._audio_obs" in recovery
+    assert "rtc is not self.rtc" in recovery
+
+
+def test_post_join_audio_recovery_reopens_and_resubscribes_until_pcm(bridge, B_mod):
+    class ImmediateStop:
+        def __init__(self):
+            self.waits = []
+
+        def wait(self, delay):
+            self.waits.append(delay)
+            return False
+
+    class Observer:
+        _n = [0]
+
+    stop = ImmediateStop()
+    observer = Observer()
+    rtc = object()
+    bridge.stop = stop
+    bridge.rtc = rtc
+    bridge._audio_obs = observer
+    bridge.robot_uid = "210010683"
+    bridge.audio_enabled = True
+    bridge.listen_on = True
+    subscriptions = []
+
+    def subscribe(tag):
+        subscriptions.append(tag)
+        if len(subscriptions) == 2:
+            observer._n[0] = 1
+
+    result = bridge._recover_robot_audio(
+        "210010683", rtc, observer, subscribe, delays=(0, 0, 0)
+    )
+
+    assert result == "receiving"
+    assert stop.waits == [0, 0, 0]
+    assert subscriptions == ["recovery-1", "recovery-2"]
+    assert bridge.sent == [
+        (B_mod.OP_AUDIO_LISTEN, {"type": 1, "open": 1}),
+        (B_mod.OP_AUDIO_LISTEN, {"type": 1, "open": 1}),
+    ]
+
+
+def test_post_join_audio_recovery_stops_for_privacy_or_stale_session(bridge):
+    class ImmediateStop:
+        def wait(self, _delay):
+            return False
+
+    class Observer:
+        _n = [0]
+
+    bridge.stop = ImmediateStop()
+    bridge._audio_obs = Observer()
+    bridge.rtc = object()
+    bridge.robot_uid = "210010683"
+    bridge.audio_enabled = True
+    bridge.listen_on = False
+    subscriptions = []
+
+    assert bridge._recover_robot_audio(
+        "210010683", bridge.rtc, bridge._audio_obs, subscriptions.append, delays=(0,)
+    ) == "disabled"
+    assert bridge.sent == []
+    assert subscriptions == []
+
+    bridge.listen_on = True
+    stale_rtc = object()
+    assert bridge._recover_robot_audio(
+        "210010683", stale_rtc, bridge._audio_obs, subscriptions.append, delays=(0,)
+    ) == "stale"
+    assert bridge.sent == []
+    assert subscriptions == []

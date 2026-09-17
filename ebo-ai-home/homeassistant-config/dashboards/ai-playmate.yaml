@@ -29,16 +29,16 @@ views:
         title: 声音连接状态
         show_header_toggle: false
         entities:
-          - entity: number.ebo_talkback_volume
+          - entity: number.fu_mu_jia_de_ebo_talkback_volume
             name: EBO 播放我的声音时的音量
 
       - type: conditional
         conditions:
-          - entity: switch.ebo_camera
+          - entity: switch.fu_mu_jia_de_ebo_camera
             state: "off"
         card:
           type: markdown
-          title: EBO 示例设备
+          title: 父母家的 EBO
           content: >-
             💤 **EBO 正在休息，摄像头没有连接。**
 
@@ -47,12 +47,12 @@ views:
 
       - type: conditional
         conditions:
-          - entity: switch.ebo_camera
+          - entity: switch.fu_mu_jia_de_ebo_camera
             state: "on"
         card:
           type: picture-entity
-          entity: camera.ebo
-          name: EBO 示例设备（点画面看直播）
+          entity: camera.fu_mu_jia_de_ebo
+          name: 父母家的 EBO（点画面看直播）
           camera_view: auto
           show_name: true
           show_state: true
@@ -124,9 +124,9 @@ views:
         entities:
           - entity: input_select.ai_audio_output
             name: 声音输出设备
-          - entity: media_player.ebo_speaker
-            name: EBO 示例设备 扬声器
-          - entity: number.ebo_talkback_volume
+          - entity: media_player.fu_mu_jia_de_ebo_speaker
+            name: 父母家的 EBO 扬声器
+          - entity: number.fu_mu_jia_de_ebo_talkback_volume
             name: 对讲音量
           - entity: input_text.ai_last_reply
             name: 最近播放的内容
@@ -146,13 +146,13 @@ views:
         title: EBO 状态与安全控制
         show_header_toggle: false
         entities:
-          - entity: binary_sensor.ebo_online
+          - entity: binary_sensor.fu_mu_jia_de_ebo_online
             name: 在线
-          - entity: sensor.ebo_battery
+          - entity: sensor.fu_mu_jia_de_ebo_battery
             name: 电量
-          - entity: binary_sensor.ebo_docked
+          - entity: binary_sensor.fu_mu_jia_de_ebo_docked
             name: 在充电座
-          - entity: button.ebo_stop
+          - entity: button.fu_mu_jia_de_ebo_stop
             name: 立即停止
-          - entity: button.ebo_standby
+          - entity: button.fu_mu_jia_de_ebo_standby
             name: 现在休眠

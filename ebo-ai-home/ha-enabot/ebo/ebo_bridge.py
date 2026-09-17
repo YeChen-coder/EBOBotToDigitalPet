@@ -129,6 +129,11 @@ OP_TALKBACK_VOL = 102031  # {"talkbackVolume": int 0..100}
 # with the local-mic mute → TALK.
 OP_AUDIO_LISTEN = 102001  # {"type":1,"open":0|1} — robot mic -> us
 OP_AUDIO_TALK = 102003    # {"type":1,"open":0|1} — us -> robot speaker
+# A robot can rejoin RTC noticeably later than the connection itself.  Retry from the
+# robot-joined event, not from connection setup, so a command is never "spent" while
+# there is no remote peer to receive it.  The sequence is deliberately bounded: it
+# repairs a lost mic publication without creating an endless command/rejoin loop.
+AUDIO_SOURCE_RECOVERY_DELAYS = (2.5, 5.0, 10.0, 20.0, 30.0)
 OP_MOVE_MODE = 103011   # {"moveMode": int}
 OP_NIGHT_MODE = 102035  # {"shootMode": int} — the Air 2's day/night vision mode (0 Auto, 1 Day, 2 Night)
 OP_SHOOT_MODE = OP_NIGHT_MODE  # legacy alias
@@ -317,6 +322,38 @@ class Bridge:
 
     # ---------------- Agora ----------------
 
+    def _recover_robot_audio(self, uid, rtc, obs, subscribe,
+                             delays=AUDIO_SOURCE_RECOVERY_DELAYS):
+        """Re-open and re-subscribe the current robot mic until real PCM arrives.
+
+        The recovery worker is tied to one RTC/observer generation.  A later rejoin,
+        shutdown, disconnect, or explicit global microphone mute invalidates it.
+        """
+        for attempt, delay in enumerate(delays, 1):
+            if self.stop.wait(delay):
+                return "stopped"
+            if (rtc is not self.rtc or obs is not self._audio_obs
+                    or str(uid) != self.robot_uid):
+                return "stale"
+            if getattr(obs, "_n", [0])[0] > 0:
+                return "receiving"
+            if not (self.connected and self.audio_enabled and self.listen_on):
+                return "disabled"
+            try:
+                # Reassert BOTH sides of the contract.  A successful SDK subscribe
+                # state does not prove the robot resumed publishing after a rejoin.
+                self.send(OP_AUDIO_LISTEN, {"type": 1, "open": 1})
+                log("[audio-recovery] attempt %d/%d: re-opened robot mic (102001)"
+                    % (attempt, len(delays)))
+            except Exception as e:
+                log("[audio-recovery] mic re-open attempt failed:", e)
+            subscribe("recovery-%d" % attempt)
+        if (rtc is self.rtc and obs is self._audio_obs
+                and str(uid) == self.robot_uid
+                and getattr(obs, "_n", [0])[0] == 0):
+            log("[audio-recovery] bounded retries exhausted; source health remains failed")
+        return "exhausted"
+
     def connect_agora(self):
         s = self.s
         self.audio_health = AudioHealth()
@@ -370,14 +407,18 @@ class Bridge:
                     except Exception as e:
                         log("[audio] could not open the robot mic:", e)
                     _sub("join")
-                    # the robot's audio track may be published a moment after it joins — retry
-                    # once after a short delay so we don't miss it (mirrors the app, where you
-                    # tap "listen" well after the robot is already streaming).
-                    def _retry():
-                        time.sleep(2.5)
-                        if self.audio_enabled and self.rtc:
-                            _sub("retry")
-                    threading.Thread(target=_retry, daemon=True).start()
+                    # A fresh RTC connection can exist for minutes before the robot joins.  Start
+                    # recovery NOW, from the peer-joined event.  Re-sending only subscribe_audio
+                    # is insufficient: after a wake/rejoin the robot may keep its mic publisher
+                    # closed until it receives OP_AUDIO_LISTEN again.
+                    rtc_generation = self.rtc
+                    observer_generation = self._audio_obs
+                    threading.Thread(
+                        target=self._recover_robot_audio,
+                        args=(str(uid), rtc_generation, observer_generation, _sub),
+                        name="audio-source-recovery",
+                        daemon=True,
+                    ).start()
 
         bridge = self
 

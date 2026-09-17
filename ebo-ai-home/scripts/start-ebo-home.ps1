@@ -143,10 +143,12 @@ try {
     Write-Host ".env and compose.yaml are valid." -ForegroundColor Green
 
     Write-Step "Starting Home Assistant, EBO Engine, and Realtime Assistant"
-    & docker compose --profile assistant up -d homeassistant ebo-engine realtime-assistant
-    if ($LASTEXITCODE -ne 0) {
-        throw "docker compose up failed with exit code $LASTEXITCODE."
-    }
+    # The host controller first verifies cloud shutdown. Never bypass saved runtime intent.
+    Push-Location (Join-Path $ProjectDirectory 'ops/diagnostics')
+    try {
+        & node --env-file=.env scripts/runtime.mjs local
+        if ($LASTEXITCODE -ne 0) { throw 'Local transition incomplete. Open http://127.0.0.1:8179 to inspect the blocking step.' }
+    } finally { Pop-Location }
 
     Write-Step "Waiting for all services and media streams"
     $serviceWatch = [Diagnostics.Stopwatch]::StartNew()

@@ -1048,13 +1048,13 @@ class TestAWSBedrock:
         with patch("custom_components.llmvision.providers.async_get_clientsession"):
             bedrock = AWSBedrock(
                 mock_hass,
-                aws_access_key_id="AKIAIOSFODNN7EXAMPLE",
+                aws_access_key_id="EXAMPLE_ACCESS_KEY_ID",
                 aws_secret_access_key="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
                 aws_region_name="us-west-2",
                 model="claude-3",
             )
 
-            assert bedrock.aws_access_key_id == "AKIAIOSFODNN7EXAMPLE"
+            assert bedrock.aws_access_key_id == "EXAMPLE_ACCESS_KEY_ID"
             assert bedrock.use_bearer_token is False
             assert bedrock.aws_region == "us-west-2"
 
@@ -1181,7 +1181,7 @@ class TestProviderFactory:
     def test_create_aws_bedrock(self, mock_hass):
         """Test ProviderFactory creates AWS Bedrock provider."""
         config = {
-            "aws_access_key_id": "AKIAIOSFODNN7EXAMPLE",
+            "aws_access_key_id": "EXAMPLE_ACCESS_KEY_ID",
             "aws_secret_access_key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
             "aws_region": "us-east-1",
         }
