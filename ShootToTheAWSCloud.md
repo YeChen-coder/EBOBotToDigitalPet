@@ -343,9 +343,13 @@ Diagnostic Agent 确实得大改。
 
 好的，这回是正式的真的是出问题了。
 
-在进行从云端切换到本地的操作时，电脑这边其实有两三次弹出notification提醒 Tier 0 那边对 Realtime Assistant 的 Container 的 Docker health 的检查问题。查了一下，首先判断音频源连接 failed。而且这个音频源得一直往项目上推，哪怕对面是静音也得推静音，所以这肯定是出问题了。
+在进行从云端切换到本地的操作时，电脑这边其实有两三次弹出notification提醒 Tier 0 那边对 Realtime Assistant 的 Container 的 Docker health 的检查问题， dashboard上也显示assistant (即为realtime assistant 这个 container unhealthy), 但同时，docker 页面是正常的，意味着这个container在开着但是是里面的程序跑的不对了。 
 
-追查分析出来的原因是：在切换过程中，虽然程序里发了打开音频的命令，但机器人那边有延迟，过了 20 多秒才真正打开，自然就没收到这个命令。
+查了一下，首先判断音频源连接 failed。而且这个音频源得一直往项目上推，哪怕对面是静音也得推静音，所以这肯定是出问题了。
+
+<img width="982" height="130" alt="image" src="https://github.com/user-attachments/assets/e9fa3ad1-7c07-4331-8bad-7d74c3c550af" />
+
+追查分析出来的原因是：在切换过程中，虽然程序里发了打开音频的命令，但机器人那边有延迟，比命令来的开的慢，自然就没收到这个命令。
 
 所以也就是说，自从今天下午从云端切到本地之后，这三四个小时之内其实一直都没有收到音频。收不到音频，自然后续的一些程序以及 ChatGPT 那边的 response 就都无法生成了。
 
