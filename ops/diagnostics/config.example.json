@@ -1,0 +1,20 @@
+{
+  "runtimeEnvironment": "local",
+  "observationOnly": true,
+  "maintenance": false,
+  "autoRecovery": true,
+  "guardianAutoRestart": true,
+  "pollSeconds": 10,
+  "confirmSeconds": 60,
+  "startupSeconds": 90,
+  "recoverySeconds": 120,
+  "healthySeconds": 30,
+  "repeatWindowSeconds": 1800,
+  "diagnosisSeconds": 300,
+  "notifySeconds": 300,
+  "targets": [
+    { "id": "engine", "container": "ebo-ai-home-ebo-engine", "probe": "container", "restartOnStall": false },
+    { "id": "assistant", "container": "ebo-ai-home-realtime-assistant", "probe": "ebo-health", "url": "http://host.docker.internal:8099/health", "restartOnStall": true },
+    { "id": "homeassistant", "container": "ebo-ai-home-homeassistant", "probe": "http", "url": "http://host.docker.internal:8123", "restartOnStall": false }
+  ]
+}

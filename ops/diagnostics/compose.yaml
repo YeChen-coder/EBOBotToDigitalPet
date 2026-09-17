@@ -1,0 +1,138 @@
+name: ebo-diagnostics
+
+x-runtime: &runtime
+  restart: unless-stopped
+  init: true
+  read_only: true
+  security_opt:
+    - no-new-privileges:true
+  cap_drop: [ALL]
+  tmpfs:
+    - /tmp:size=128m,mode=1777
+  logging:
+    driver: json-file
+    options: { max-size: "5m", max-file: "3" }
+
+services:
+  watcher:
+    <<: *runtime
+    build: { context: ., target: core }
+    image: ebo-diagnostics/watcher:0.1.0
+    command: [node, src/watcher.mjs]
+    mem_limit: 192m
+    cpus: 0.5
+    pids_limit: 64
+    ports: ["127.0.0.1:8178:8080"]
+    environment:
+      CONFIG_PATH: /app/config.json
+      DATA_DIR: /data
+      BRIDGE_URL: http://host.docker.internal:8177
+      DIAGNOSTIC_URL: http://diagnostic-service:8081
+      BRIDGE_TOKEN: ${BRIDGE_TOKEN:?run setup}
+      DIAGNOSTIC_TOKEN: ${DIAGNOSTIC_TOKEN:?run setup}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+    volumes:
+      - ./config.local.json:/app/config.json:ro
+      - watcher-data:/data
+    networks: [control]
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:8080/health').then(r=>r.json()).then(h=>process.exit(h.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  diagnostic-service:
+    <<: *runtime
+    build: { context: ., target: core }
+    image: ebo-diagnostics/service:0.1.0
+    command: [node, src/diagnostic-service.mjs]
+    mem_limit: 256m
+    cpus: 0.5
+    pids_limit: 64
+    environment:
+      DATA_DIR: /data
+      DIAGNOSTIC_TOKEN: ${DIAGNOSTIC_TOKEN:?run setup}
+      WORKER_TOKEN: ${WORKER_TOKEN:?run setup}
+      ADVANCED_PROVIDER_URL: ${ADVANCED_PROVIDER_URL:-http://codex-worker:8082}
+      TRIAGE_API_KEY: ${TRIAGE_API_KEY:-}
+      TRIAGE_MODEL: ${TRIAGE_MODEL:-}
+      TRIAGE_PROVIDER: ${TRIAGE_PROVIDER:-codex}
+      TRIAGE_PROVIDER_URL: http://codex-triage:8082
+      TRIAGE_WORKER_TOKEN: ${TRIAGE_WORKER_TOKEN:?run setup}
+      TRIAGE_TIMEOUT_SECONDS: ${TRIAGE_TIMEOUT_SECONDS:-90}
+      ESCALATION_POLICY: ${ESCALATION_POLICY:-on-inconclusive}
+    volumes: [diagnostic-data:/data]
+    networks: [control, analysis]
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:8081/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  codex-worker:
+    <<: *runtime
+    build: { context: ., target: worker }
+    image: ebo-diagnostics/codex-worker:0.1.0
+    mem_limit: 1536m
+    cpus: 1.5
+    pids_limit: 128
+    environment:
+      DATA_DIR: /data
+      SOURCE_DIR: /workspace
+      CODEX_HOME: /home/node/.codex
+      CODEX_API_KEY: ${CODEX_API_KEY:-}
+      CODEX_STAGE: advanced
+      CODEX_MODEL: ${CODEX_MODEL:-gpt-5.6-sol}
+      CODEX_REASONING_EFFORT: ${CODEX_REASONING_EFFORT:-high}
+      CODEX_MAX_SECONDS: ${CODEX_TIMEOUT_SECONDS:-300}
+      WORKER_TOKEN: ${WORKER_TOKEN:?run setup}
+    volumes:
+      - worker-data:/data
+      - codex-home:/home/node/.codex
+      - ./local/source:/workspace:ro
+    networks: [analysis]
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:8082/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  codex-triage:
+    <<: *runtime
+    build: { context: ., target: worker }
+    image: ebo-diagnostics/codex-worker:0.1.0
+    mem_limit: 1024m
+    cpus: 1.0
+    pids_limit: 128
+    environment:
+      DATA_DIR: /data
+      SOURCE_DIR: /workspace
+      CODEX_HOME: /home/node/.codex
+      CODEX_API_KEY: ${CODEX_API_KEY:-}
+      CODEX_STAGE: triage
+      CODEX_MODEL: ${TRIAGE_CODEX_MODEL:-gpt-5.6-luna}
+      CODEX_REASONING_EFFORT: ${TRIAGE_CODEX_REASONING_EFFORT:-low}
+      CODEX_MAX_SECONDS: ${TRIAGE_TIMEOUT_SECONDS:-90}
+      WORKER_TOKEN: ${TRIAGE_WORKER_TOKEN:?run setup}
+    volumes:
+      - triage-data:/data
+      - triage-codex-home:/home/node/.codex
+      - ./local/source:/workspace:ro
+    networks: [analysis]
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:8082/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  control:
+  analysis:
+volumes:
+  watcher-data:
+  diagnostic-data:
+  worker-data:
+  codex-home:
+  triage-data:
+  triage-codex-home:
