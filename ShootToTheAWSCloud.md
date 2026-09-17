@@ -339,5 +339,35 @@ Diagnostic Agent 确实得大改。
 
 至于算命（八字、六爻）的 RAG，也只在我极度沉迷算命那阵子有点用。后来之所以丢掉了，主要是因为我根本没能力判断它输出的结果到底对不对。和AI agent 一样的逻辑，一个无法进行 verification 的东西，作用极其有限。
 
+---
 
+好的，这回是正式的真的是出问题了。
 
+在进行从云端切换到本地的操作时，电脑这边其实有两三次弹出notification提醒 Tier 0 那边对 Realtime Assistant 的 Container 的 Docker health 的检查问题。查了一下，首先判断音频源连接 failed。而且这个音频源得一直往项目上推，哪怕对面是静音也得推静音，所以这肯定是出问题了。
+
+追查分析出来的原因是：在切换过程中，虽然程序里发了打开音频的命令，但机器人那边有延迟，过了 20 多秒才真正打开，自然就没收到这个命令。
+
+所以也就是说，自从今天下午从云端切到本地之后，这三四个小时之内其实一直都没有收到音频。收不到音频，自然后续的一些程序以及 ChatGPT 那边的 response 就都无法生成了。
+
+故障时间线（多伦多时间）：
+
+1. 10:43–14:18 音频持续正常，约 72–73 kbps，累计收到约 112 MB。说明机器人麦克风和网络此前都正常。
+2. 14:18:52，Realtime Assistant 检测到 RTSP 视频中断，调用唤醒和摄像头恢复。
+3. EBO Engine 因此重建整套 Agora RTC 会话。
+4. 14:20:35 新会话建立，但机器人直到 14:21:17 才重新加入。
+5. Engine 的“20 秒后重发开麦命令”在 14:20:55 执行——早于机器人加入，所以没有作用。
+6. 机器人加入后，Engine 只发送了一次开麦命令并重试订阅。订阅 API 返回成功，但之后始终没有：
+   - audio track subscribed
+   - first remote audio frame
+   - ROBOT MIC OPENED
+7. 视频随后完全恢复，但音频保持 0 bytes / 0 bitrate 至今。
+
+这是第一个遇到的真正算得上问题的问题。改好了之后，也在当前这个项目里面加了一个 incident response 文件夹，里面放中英双语的 incident report。
+
+其实它也证明了这边的 Diagnostic Agent （起码在搞不定了喊人这方面-powershell发notification）确实有效，虽然也只是 Tier 0。至于 Tier 1 和 Tier 2，因为都是 Codex 那边的，为什么没有触发到呢？很大原因是这几天对 token 的消耗实在是太大了，5 个小时 limit 一开就用没了，实在是没有 token 给他用。所以模型那边对 Codex CLI 根本就调用不起来，在一定程度上也导致了对这个事情的响应比较晚
+
+去看了diagnostic agent log, 发现程序确实没毛病，问题一出就发现了而且很积极的在修反复recovered, 而且也确实是叫了tier 1的codex cli了，可是因为codex 额度是真的reach limit了，导致没有完成排查。
+
+<img width="771" height="261" alt="image" src="https://github.com/user-attachments/assets/7a8393fa-5e0d-49c3-8e31-2cad25153278" />
+
+<img width="776" height="593" alt="image" src="https://github.com/user-attachments/assets/88d53a35-88bb-42e6-92c7-0b3573152dec" />
