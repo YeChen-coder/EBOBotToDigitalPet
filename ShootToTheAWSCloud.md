@@ -1,4 +1,4 @@
-打算开了branch 把项目移到AWS上去了，因此引发的一连串问题和对解决方案的探索。-补：后来又考虑了一下。因为现在加了 diagnostic agent，又跟云端那边做了一些联动，导致它跟当前上传的这个项目分歧有点太大了。我觉得在当前项目里开 branch 可能不是一个很好的选择。所以后续等我调得差不多、要发上来的时候，我会建一个新的 repository，而不是在这里面开 branch。-再补，算了还是放这里的main吧，repository多了我自己都看着麻烦。-最终补：当前这个项目的 main 分支是一个最新的、加了 diagnostic agent 的版本。至于 cloud 的那个，它确实是新开了一个 repository，因为我觉得它们两个还是得分开，它们仍然是在讲完全不同的事情。但是那个没有 diagnostic agent 的版本（纯粹的一个应用），给放到这个项目的一个 branch （archive/main-before-local-diagnostics-2026-09-17）里面了。
+写运维这个项目的 diagnostic agent （啊，对，就是项目的项目，为了保全当前这个项目正常平稳运行的那个项目） 和 要把项目迁移到AWS上去了，因此引发的一连串问题和对解决方案的探索。-补：后来又考虑了一下。因为现在加了 diagnostic agent，又跟云端那边做了一些联动，导致它跟当前上传的这个项目分歧有点太大了。我觉得在当前项目里开 branch 可能不是一个很好的选择。所以后续等我调得差不多、要发上来的时候，我会建一个新的 repository，而不是在这里面开 branch。-再补，算了还是放这里的main吧，repository多了我自己都看着麻烦。-最终补：当前这个项目的 main 分支是一个最新的、加了 diagnostic agent 的版本。至于 cloud 的那个，它确实是新开了一个 repository，因为我觉得它们两个还是得分开，它们仍然是在讲完全不同的事情。但是那个没有 diagnostic agent 的版本（纯粹的一个应用），给放到这个项目的一个 branch （archive/main-before-local-diagnostics-2026-09-17）里面了。
 
 ---
 
