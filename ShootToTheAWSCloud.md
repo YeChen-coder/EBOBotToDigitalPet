@@ -387,3 +387,15 @@ Diagnostic Agent 确实得大改。
 其实云端那边也不见得绝对靠谱，一般云端的容灾也得放在至少两个 availability zone 才能搞定。所以我觉得还是不要折腾这个了。再往下深究的话，就回到了一开始为什么云端跑通了还要跟本地整合？单纯就是为了省点钱啊。AWS 那边的东西真不便宜，下手太黑了， 实在是太黑了。
 
 所以很多事情就这样吧，我觉得现在也挺好的，真的挺好的。
+
+---
+
+给dashboard加了cost模块，这可太棒了。
+
+<img width="1183" height="370" alt="image" src="https://github.com/user-attachments/assets/40ea292b-d7d7-4439-8e37-aa5afc2536ee" />
+
+看看这卓越的dashboard：
+
+<img width="1763" height="4371" alt="image" src="https://github.com/user-attachments/assets/5ebcd8f5-9c65-48a5-ba30-8bbed549e851" />
+
+好的，可以拿着这个招摇撞骗（不是，sharing 去了）
