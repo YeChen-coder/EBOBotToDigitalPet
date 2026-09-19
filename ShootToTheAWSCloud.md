@@ -375,3 +375,15 @@ Diagnostic Agent 确实得大改。
 <img width="771" height="261" alt="image" src="https://github.com/user-attachments/assets/7a8393fa-5e0d-49c3-8e31-2cad25153278" />
 
 <img width="776" height="593" alt="image" src="https://github.com/user-attachments/assets/88d53a35-88bb-42e6-92c7-0b3573152dec" />
+
+---
+
+讲一个鬼故事哈：前几天不是刚把云端跟本地这边集成起来嘛，然后我就切回本地了。结果就在我切回本地的第二天，power outage 了！好的， 一年一次的 power outage，偏偏在我把这个项目切回本地的第二天出现了。
+
+那天我睡了一个下午，整个屋子都是黑的，完全没电。The administrative of the apartment says they don't know when will the power get back, they let us call the utility company. How could I say，整个事情就很无语。。。
+
+你要说这个东西能不能改进，它确实能改进：给本地电脑搞一个心跳包，如果多久没发消息或者 ping 不通了，就自动切回云端。这个逻辑很好搞，但要实现它，不还得需要一个能一直存在、一直 keep on 的东西吗？这东西基本上也只能上云吧，不然很难怎么保证它的robustness。
+
+其实云端那边也不见得绝对靠谱，一般云端的容灾也得放在至少两个 availability zone 才能搞定。所以我觉得还是不要折腾这个了。再往下深究的话，就回到了一开始为什么云端跑通了还要跟本地整合？单纯就是为了省点钱啊。AWS 那边的东西真不便宜，下手太黑了， 实在是太黑了。
+
+所以很多事情就这样吧，我觉得现在也挺好的，真的挺好的。
