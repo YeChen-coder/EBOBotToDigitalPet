@@ -120,6 +120,7 @@ test('dashboard defaults to English and offers a remembered Chinese switch', () 
   const html=dashboardHtml('test');
   assert.match(html,/<html lang="en">/);assert.match(html,/<option value="en">English<\/option><option value="zh">中文<\/option>/);
   assert.match(html,/ebo-dashboard-language/);assert.match(html,/Runtime & Diagnostics/);assert.match(html,/运行与诊断/);
+  assert.match(html,/id="openaiBilling"/);assert.match(html,/id="awsBilling"/);assert.match(html,/API 与基础设施花销/);
 });
 test('dashboard accepts only loopback host, same-origin CSRF-authenticated JSON writes', async t => {
   const f = fixture(); const server = serveDashboard({ runtime:f.runtime, reportDir: 'nonexistent', config:f.config, awsHost:{ connections:{} }, port:0 });

@@ -14,6 +14,8 @@ export function awsPolicies(target) {
       Resource: [...new Set(a.containers.map(c => `arn:aws:logs:${a.region}:${a.accountId}:log-group:${c.logGroup}:*`))] },
     // AWS does not offer resource-level permissions for GetMetricStatistics.
     { Sid: 'RegionalMetricStatistics', Effect: 'Allow', Action: ['cloudwatch:GetMetricStatistics'], Resource: '*', Condition: region },
+    // Cost Explorer does not support resource-level permissions. The dashboard caches this paid API for six hours.
+    { Sid: 'AccountCostSummary', Effect: 'Allow', Action: ['ce:GetCostAndUsage'], Resource: '*' },
   ] };
   const action = { Version: '2012-10-17', Statement: [
     ...read.Statement.filter(s => ['ConfiguredService', 'ClusterTaskStates', 'ListClusterTasks'].includes(s.Sid)),

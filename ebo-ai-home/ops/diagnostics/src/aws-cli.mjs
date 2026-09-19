@@ -4,7 +4,7 @@ import { promisify } from 'node:util';
 const exec = promisify(execFile);
 const allowed = new Set(['sts get-caller-identity', 'ecs describe-services', 'ecs list-tasks',
   'ecs describe-tasks', 'logs filter-log-events', 'cloudwatch get-metric-statistics', 'ecs stop-task',
-  'ecs update-service', 'application-autoscaling describe-scalable-targets']);
+  'ecs update-service', 'application-autoscaling describe-scalable-targets', 'ce get-cost-and-usage']);
 export function awsError(error) {
   const text = String(error?.stderr || error?.message || '');
   if (/AccessDenied|UnauthorizedOperation/.test(text)) return 'aws_access_denied';
@@ -29,13 +29,15 @@ export function createAwsCli(connection, target, execute = exec) {
     const env = { ...process.env };
     // Explicit profiles must not accidentally fall back to unrelated process credentials.
     for (const key of Object.keys(env)) if (key.startsWith('AWS_')) delete env[key];
+    delete env.OPENAI_ADMIN_KEY;
     Object.assign(env, { AWS_PAGER: '', AWS_CLI_AUTO_PROMPT: 'off', AWS_MAX_ATTEMPTS: '1',
       AWS_CLI_FILE_ENCODING: 'UTF-8', AWS_CLI_OUTPUT_ENCODING: 'UTF-8' });
     for (const [field, key] of [['configFile', 'AWS_CONFIG_FILE'], ['credentialsFile', 'AWS_SHARED_CREDENTIALS_FILE'],
       ['loginCacheDirectory', 'AWS_LOGIN_CACHE_DIRECTORY']]) if (connection[field]) env[key] = connection[field];
     try {
+      const region = operation.startsWith('ce ') ? 'us-east-1' : target.aws.region;
       const { stdout } = await execute(connection.cliPath || 'aws', [...args, '--profile', profile,
-        '--region', target.aws.region, '--output', 'json', '--no-cli-pager', '--no-cli-auto-prompt',
+        '--region', region, '--output', 'json', '--no-cli-pager', '--no-cli-auto-prompt',
         '--cli-connect-timeout', '4', '--cli-read-timeout', '8'],
       { env, signal, timeout: 15000, windowsHide: true, maxBuffer: 2 * 1024 * 1024 });
       return stdout.trim() ? JSON.parse(stdout) : {};

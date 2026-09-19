@@ -12,6 +12,7 @@ import { RuntimeControl } from './runtime.mjs';
 import { createRuntimeIO } from './runtime-io.mjs';
 import { serveDashboard } from './dashboard.mjs';
 import { ConversationLog } from './conversations.mjs';
+import { BillingMonitor } from './billing.mjs';
 
 const exec = promisify(execFile);
 const config = readConfig();
@@ -25,7 +26,8 @@ const adapters = new Map(config.targets.filter(t => t.adapter === 'aws-ecs').map
   return [t.id, new AwsEcsAdapter(t, config, connection,
     new Store(path.join(data, `aws-${t.id}.json`), {}), call)];
 }));
-const docker = (args, timeout = 5000) => exec(process.env.DOCKER_BIN || 'docker', args, { timeout, windowsHide: true, maxBuffer: 128 * 1024 });
+const childEnv = () => { const env = { ...process.env }; delete env.OPENAI_ADMIN_KEY; return env; };
+const docker = (args, timeout = 5000) => exec(process.env.DOCKER_BIN || 'docker', args, { env: childEnv(), timeout, windowsHide: true, maxBuffer: 128 * 1024 });
 const runtimeIO = createRuntimeIO({ config, docker, adapters, calls, projectRoot: path.resolve('../..') });
 const runtime = new RuntimeControl(new Store(path.join(data, 'runtime.json'), {}), config, runtimeIO);
 let conversations;
@@ -33,6 +35,8 @@ try {
   conversations = new ConversationLog({ store: new Store(path.join(data, 'conversations.json'), {}),
     targets: config.targets.filter(t => t.adapter === 'aws-ecs'), calls, directory: path.resolve('../../assistant-data'), settings: config.conversationLogs });
 } catch { audit('conversation_initialization_failed'); }
+const billing = new BillingMonitor({ store: new Store(path.join(data, 'billing.json'), {}),
+  awsCall: calls.values().next().value, openAIKey: process.env.OPENAI_ADMIN_KEY || '' });
 async function dockerOk() { try { await docker(['info', '--format', '{{.ServerVersion}}']); return true; } catch { return false; } }
 async function snapshot() {
   const ready = await dockerOk();
@@ -53,7 +57,7 @@ async function localNotify(message) {
   fs.appendFileSync(path.join(data, 'alerts.jsonl'), JSON.stringify({ at: new Date().toISOString(), message }) + '\n');
   if (process.platform !== 'win32') { audit('local_alert', { message }); return; }
   await exec('powershell.exe', ['-NoProfile', '-NonInteractive', '-File', path.resolve('scripts/notify-local.ps1')], {
-    env: { ...process.env, EBO_DIAGNOSTIC_MESSAGE: message }, windowsHide: true, timeout: 15000,
+    env: { ...childEnv(), EBO_DIAGNOSTIC_MESSAGE: message }, windowsHide: true, timeout: 15000,
   });
 }
 const bridge = new ActionBridge(new Store(path.join(data, 'actions.json'), { actions: {}, notifications: {} }), config,
@@ -75,13 +79,14 @@ serve({ host: process.env.BRIDGE_HOST || '0.0.0.0', port: Number(process.env.BRI
     if (method === 'POST' && url === '/restart' && (runtime.busy || runtime.status().monitoringSuppressed)) return { code: 409, body: { error: 'runtime_busy' } };
     return bridge.route(method, url, body);
   } });
-serveDashboard({ runtime, reportDir: path.resolve('local/health-report'), config, awsHost, conversations });
+serveDashboard({ runtime, reportDir: path.resolve('local/health-report'), config, awsHost, conversations, billing });
 audit('host_bridge_started', { observationOnly: config.observationOnly, guardianAutoRestart: config.guardianAutoRestart });
 let watcherBadSince = null; let watcherNotified = false; let nextRuntimePoll = 0;
 while (true) {
   try {
     // Independent, bounded collection. Browser refreshes only read the local cache.
     if (conversations) void conversations.poll(config.runtimeEnvironment).catch(() => audit('conversation_collection_failed'));
+    void billing.poll().catch(() => audit('billing_collection_failed'));
     if (now() >= nextRuntimePoll) { nextRuntimePoll = now() + 60; void runtime.poll().catch(() => audit('runtime_poll_failed')); }
     for (const t of activeTargets(config).filter(t => t.adapter === 'aws-ecs')) if (!runtime.busy && !config.maintenance && !t.maintenance) void adapters.get(t.id).refresh();
     const ready = await dockerOk();

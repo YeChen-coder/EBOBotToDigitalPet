@@ -52,8 +52,8 @@ if (!fs.existsSync(credentialsFile)) {
   fs.writeFileSync(credentialsFile, `[ebo-diagnostics-read]\naws_access_key_id=${key.AccessKeyId}\naws_secret_access_key=${key.SecretAccessKey}\n`, { mode: 0o600, flag: 'wx' });
 }
 fs.writeFileSync(configFile, `[profile ebo-diagnostics-read]\nregion=${target.aws.region}\noutput=json\n`, { mode: 0o600 });
-host.connections[target.aws.connection] = { cliPath: admin.cliPath, readProfile: 'ebo-diagnostics-read', configFile,
-  credentialsFile, actionProfile: '', allowTaskReplacement: false };
+host.connections[target.aws.connection] = { ...host.connections[target.aws.connection], cliPath: admin.cliPath,
+  readProfile: 'ebo-diagnostics-read', configFile, credentialsFile };
 fs.writeFileSync(hostFile, JSON.stringify(host, null, 2));
 fs.writeFileSync('./local/iam/reader-installation.json', JSON.stringify({ userName, arn: user.Arn,
   installedAt: new Date().toISOString(), credentialsDirectory: privateDir, permission: 'read-only' }, null, 2));

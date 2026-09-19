@@ -109,8 +109,13 @@ test('replacement refuses deployments, overlap settings and scaled-down services
 test('AWS CLI isolates credentials, bounds invocation and rejects general commands', async () => {
   let invocation;
   const call = createAwsCli({ readProfile: 'reader', cliPath: 'aws.exe' }, target, async (...args) => { invocation = args; return { stdout: '{}' }; });
+  const originalOpenAIKey = process.env.OPENAI_ADMIN_KEY;
+  process.env.OPENAI_ADMIN_KEY = 'must-not-reach-aws';
   await call(['sts', 'get-caller-identity']); assert.ok(invocation[1].includes('reader'));
-  assert.equal(invocation[2].env.AWS_ACCESS_KEY_ID, undefined); assert.equal(invocation[2].windowsHide, true);
+  assert.equal(invocation[2].env.AWS_ACCESS_KEY_ID, undefined); assert.equal(invocation[2].env.OPENAI_ADMIN_KEY, undefined); assert.equal(invocation[2].windowsHide, true);
+  if (originalOpenAIKey === undefined) delete process.env.OPENAI_ADMIN_KEY; else process.env.OPENAI_ADMIN_KEY = originalOpenAIKey;
+  await call(['ce', 'get-cost-and-usage', '--time-period', 'Start=2026-09-01,End=2026-09-02', '--granularity', 'DAILY', '--metrics', 'UnblendedCost']);
+  assert.equal(invocation[1][invocation[1].indexOf('--region') + 1], 'us-east-1');
   await assert.rejects(call(['iam', 'create-user'])); await assert.rejects(call(['ecs', 'stop-task']));
 });
 test('local Docker failure does not prevent cloud observation', async () => {
@@ -180,4 +185,5 @@ test('policies separate read and action permissions and scope logs and cluster',
   assert.deepEqual(action.Statement.at(-1).Action, ['ecs:StopTask']);
   assert.equal(read.Statement.find(s => s.Sid === 'ConfiguredLogs').Resource.length, 2);
   assert.equal(read.Statement.find(s => s.Sid === 'ListClusterTasks').Condition.ArnEquals['ecs:cluster'], 'arn:aws:ecs:ca-central-1:123456789012:cluster/ebo-cloud-lab');
+  assert.deepEqual(read.Statement.find(s => s.Sid === 'AccountCostSummary').Action, ['ce:GetCostAndUsage']);
 });
