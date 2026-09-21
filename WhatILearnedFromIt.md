@@ -1,3 +1,11 @@
+# EBOAWSCloud Related
+
+稍微吐槽一下。
+
+我现在发现，其实 EBO Bot 去实现这个功能本身，要渡的劫已经在 local 的里理完了。即真正运行的这个程序，它的逻辑，怎么实现交互等等我已经理得差不多了。
+
+但是上云之后，首先云上这套东西本身的权限就是一道事儿；而且又加了一个 diagnostic agent。现在这锅粥挺复杂的，感觉最大的复杂度还是在这个 diagnostic agent 上。因为不管它里面是用哪个 model、用什么 agent 还是别的什么，反正只要它有权限能自己去做一些操作，就得给它配上安全网，不能让它在宿主机上乱搞。由此就引发出了很多很多的限制。哦，然后同样是因为它现在有两大环境嘛，所以你 local 这边得限制一次，然后 AWS 那边也得限制一次。不过，甚至说 AWS 那边是好搞的，因为它一个 platform 本身就已经是给了一些，就是用 RBAC 还是用 least privilege 这些作为一个安全网，它本身就是有一个标准的东西的。但是本地上真的从头搞。
+
 | ID | Bullet 原文 + 中文意思 | tags 在说什么 | 实际上你做的是什么 / 该怎么理解 |
 |---|---|---|---|
 | **01** | **“Migrated the EBO Engine and Realtime Assistant from a local Docker Compose deployment to two containers in a single AWS Fargate task in ca-central-1…”** 中文：把原来本地 Docker Compose 的 Engine 和 Realtime Assistant 迁到 AWS Fargate，一个 Task 里跑两个 container；Home Assistant 仍留本地。 :chatgpt-content-reference{index="1"} | `aws fargate / ecs / cloud migration / hybrid architecture` | 这条非常直白。你原来 EBO 全在本地，后来把两个核心服务搬 AWS，但 HA 留家里，所以形成 local + cloud hybrid。**这是“云迁移”能力，不是什么额外的新技术。** |
@@ -21,3 +29,39 @@
 | **18** | **“Reduced estimated Fargate compute cost from approximately $79.26 to $39.63 per 730-hour month…”** 中文：按照当时价格和每月 730 小时估算，Fargate compute 从约 $79.26/月降到 $39.63/月。 | `FinOps / AWS pricing / cost optimization` | 这里最重要的是 **estimated**。不是 AWS 账单已经连续几个月证明节省了 50%，而是按照 pricing model 算出来的。 |
 | **19** | **“Built read-only cost inventory and pricing tools to model Fargate, CloudWatch, data transfer, EFS, AWS Backup…”** 中文：写了只读成本调查工具，把 Fargate、日志、网络、EFS、Backup 等费用因素拉出来分析，不改资源。 | `FinOps / cost analysis` | 所谓 **FinOps** 在你这里其实就是：把云资源实际用量/价格结构算清楚，然后决定哪里值得优化。不是说你成为了专业 FinOps Engineer。 |
 | **20** | **“Implemented an on-demand cloud evidence collector that normalizes ECS events, running and stopped tasks…”** 中文：做了一个按需诊断采集器，把 ECS event、运行/停止 Task、exit reason、CPU/内存、有限日志整理进 SQLite/JSONL/JSON，并加 evidence ID。 | `diagnostic pipeline / SQLite / JSONL / evidence management` | 这是从“普通运维脚本”开始过渡到 Diagnostic Agent 的关键点：**先机器化收集证据，再让后面的诊断逻辑使用这些证据。** |
+
+第 21 条想说的就是 recovery first。我做了一个 diagnostic agent，里面分了 Tier 1 和 Tier 2，都是用 Codex CLI 去做证据收集和诊断。但真正在跑项目的时候，谁也不会一开始就直接把 model agent 叫起来，不管是从经济角度还是实用角度都不合适。不能人家单纯是 Docker 挂了，第一件事不按直觉来：肯定得先把 Docker 叫起来，把 container 重新拉起来，看它能不能正常跑；而不是让 OpenAI 自己去长篇大论调查，现在没人这么干。所以 Tier 0 一律要求先把这些 health checks 基本排查跑一遍，排不出来再去叫 Codex CLI 往下走
+
+第 22 条涉及到一个权限分离，就是讲一个低权限的东西，然后怎么去拿高权限的事情。我这边直接自己写了一个程序叫 host bridge。因为我们这个 diagnostic agent 本身集成了本地和云端诊断两种能力：1. 云端那边大部分还好说，直接拿权限的 role 或者 permission 都可以干了。2. 本地这边，比如我这个 Docker 它在宿主机上跑，所以就需要做一下限制。这边限制的具体实现就是用 host bridge。但 host bridge 这个东西说来话长了，估计我会新写一篇，反正现在先往下推吧，现在先不讲 host bridge 了
+
+22 是“架构层面的权限分离”，23 是进一步把这种思想落实到 Docker 配置。
+这里的一堆词不需要死背，核心就是：
+“即使 Codex Worker 出问题，我也尽量限制它能造成的影响范围。”
+比如：
+non-root：模型进程不是管理员。
+read-only filesystem：不能随便改自己的基础系统文件。
+capabilities drop：减少 Linux 进程拥有的特殊权限。
+PID / CPU / memory limit：模型失控也不能无限吃资源。
+no Docker socket：不能直接控制整个 Docker 环境。
+control / analysis network 分开：负责执行动作的组件和只负责分析的组件不是全部混在一张网络里。
+所以它本质是一个 blast-radius containment，也就是“限制故障或模型错误的影响范围”。
+
+第 24 条：Local / AWS Adapter 抽象
+英文原文：Defined interchangeable local Docker and AWS ECS/Fargate adapters behind snapshot, evidence, prepare-restart, and restart interfaces, while enforcing a single active runtime environment to prevent dual robot ownership.中文：在统一的 snapshot、evidence、prepare-restart 和 restart 接口之后，实现了可替换的本地 Docker 与 AWS ECS/Fargate Adapter，同时强制只允许一个运行环境处于活动状态，避免本地和云端同时争抢机器人控制权。
+你的 Diagnostic Agent 要面对两种环境：
+本地 Docker 和 AWS ECS/Fargate。
+但是你不想让上面的 Controller 写成：
+“如果是 local 就执行 A，如果是 AWS 就执行 B，如果以后再加环境就继续 if/else……”
+于是你统一抽象出几个操作，例如：
+snapshot：现在状态是什么？
+evidence：给我诊断证据。
+prepareRestart：如果要重启，先检查能不能安全执行。
+restart：真正执行恢复。
+上层 Controller 不需要知道下面到底是 Docker 还是 ECS。
+另外还有一个 EBO 特有的问题：同一个机器人账号不能本地 Engine 和云端 Engine 同时连接。
+所以系统还要保证：
+Local active → AWS 必须停。
+AWS active → Local 必须停。
+这个就是 single active runtime environment。
+
+
