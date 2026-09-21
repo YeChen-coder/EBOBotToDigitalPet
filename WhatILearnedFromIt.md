@@ -6,6 +6,14 @@
 
 但是上云之后，首先云上这套东西本身的权限就是一道事儿；而且又加了一个 diagnostic agent。现在这锅粥挺复杂的，感觉最大的复杂度还是在这个 diagnostic agent 上。因为不管它里面是用哪个 model、用什么 agent 还是别的什么，反正只要它有权限能自己去做一些操作，就得给它配上安全网，不能让它在宿主机上乱搞。由此就引发出了很多很多的限制。哦，然后同样是因为它现在有两大环境嘛，所以你 local 这边得限制一次，然后 AWS 那边也得限制一次。不过，甚至说 AWS 那边是好搞的，因为它一个 platform 本身就已经是给了一些，就是用 RBAC 还是用 least privilege 这些作为一个安全网，它本身就是有一个标准的东西的。但是本地上真的从头搞。（某种程度上还算挺庆幸的，因为这边 diagnosis 的过程基本全程都是Astra干的。我现在去看它干了点什么，我都觉得它真厉害呀，真厉害呀！反正三年之内我都达不到这个高度。如果我人肉干，随便丢俩概念就够我消化一阵子了，Astra还想到这么些保全。虽然我都理解它这些在工业界都是有一套一套范式（paradigm）的，但搁以前的话，有这么多 paradigm，去学什么的，本身就存在这样的一个学习成本。不过现在因为有了 AI 在，而且 AI 学一次就都会了，普及和实际使用一个 paradigm 的成本就已经被大大降下来了。所以它才能如此通顺地用掉我一个星期的 token，搞出这么一套东西来）
 
+我旺盛的表达欲无处发泄，一定要吐槽两句。
+
+那个 Diagnostic Agent 不管是输入还是做操作，整个 whole story 那么大一帮事，实在是太复杂了。我让他写一份讲这个东西的文档，结果他丢过来一大堆名词（例如 能力式安全 幂等与 TOCTOU 复核），直接给我看的一愣一愣的。
+
+要不人类还是向伟大的 AI 大人投降吧？起码向伟大的 Astra 大人投降也行啊！哎呦，那堆东西看得我脑袋疼，我的妈呀。
+
+怎么说呢，要不是让 AI 专门针对这个东西写一份文档，我这辈子都不知道还有这些概念。我之前就像个刚会说话的小孩，觉得“哎它成了，它能跑，听上去挺让人信服的”，结果往里一扒，嚯！
+
 | ID | Bullet 原文 + 中文意思 | tags 在说什么 | 实际上你做的是什么 / 该怎么理解 |
 |---|---|---|---|
 | **01** | **“Migrated the EBO Engine and Realtime Assistant from a local Docker Compose deployment to two containers in a single AWS Fargate task in ca-central-1…”** 中文：把原来本地 Docker Compose 的 Engine 和 Realtime Assistant 迁到 AWS Fargate，一个 Task 里跑两个 container；Home Assistant 仍留本地。 :chatgpt-content-reference{index="1"} | `aws fargate / ecs / cloud migration / hybrid architecture` | 这条非常直白。你原来 EBO 全在本地，后来把两个核心服务搬 AWS，但 HA 留家里，所以形成 local + cloud hybrid。**这是“云迁移”能力，不是什么额外的新技术。** |
