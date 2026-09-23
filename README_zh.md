@@ -573,3 +573,17 @@ emmmmm, 半斤八两，Fargate Auto Scaling 这个优势其实没什么用，因
 Diagnostic agent，还是在本地机上做，在本地机上开发。
 
 先跑通，跑通之后，看一下值不值得，然后再在 AWS 上去开一个 container 或者说怎么样。我其实觉得不太可能了，不过未来不知道怎么说呢，先在本地以工程的视角跑通吧。
+
+---
+
+再看有没有一个更好的模型能被放进去，然后就顺手搜到了 Live1。
+
+然后就不行，绝对不行。因为 Live1 这边连 silence（静音）都要计费，它是按时间计费的，silent都给计费。所以在我的这个场景里边，这么稀疏的场景绝对不行。
+
+我是同意说可以用一些工程能力来解决这个问题，可是不太好，而且 Live 并不支持图像作为输入嘛
+
+"Voice session costs
+
+GPT-Live voice sessions are billed per second at the current model rate. Session duration is not rounded up to the next whole minute.
+
+Active session time includes time when the user speaks, the assistant speaks, both are silent, or the backend is working."
