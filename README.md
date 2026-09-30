@@ -50,7 +50,9 @@ The first pitfall is regional compatibility. An existing reverse-engineered open
 
 This point deserves a clearer explanation because it is important. The system needs two critical keys extracted from the mobile app through reverse engineering. The original `ha-enabot` project uses the international app as its base. I no longer remember its default region, but the important fact is that the China and non-China regions differ. The configured region must be correct for email-and-password login to succeed; otherwise, the login returns an error.
 
-This project is built on Home Assistant. For anyone who has not used it—including me, before this project—Home Assistant is a platform that runs in Docker and provides a middleware layer. Bluetooth and Wi-Fi IoT devices sit at the bottom as endpoints. If you want to control them without starting from scratch for every tiny gadget, that middleware becomes valuable. Home Assistant provides one unified interface instead of forcing you to open a separate program for every device.
+This project is built on Home Assistant. I was using it for the first time, too. Despite all the reverse engineering I had done before, that wretched Codex never told me Home Assistant was an option.
+
+A brief digression for anyone who has not used it: Home Assistant is a platform that runs in Docker and provides a middleware layer. Bluetooth and Wi-Fi IoT devices sit at the bottom as endpoints. If you want to control them without starting from scratch for every tiny gadget, that middleware becomes valuable. Home Assistant provides one unified interface instead of forcing you to open a separate program for every device.
 
 ChatGPT tells me that Home Assistant can connect directly to Bluetooth-only devices, but I have not yet added my other reverse-engineered gadgets. Their purposes are narrow and specific, so they do not really need a unified platform. More importantly, I am currently being extremely lazy, and I am still waiting for the five-hour usage limit on my dear Codex to reset.
 
@@ -516,7 +518,7 @@ Wait—a huge problem stood out. The `ebo-engine` container had received 14.4 GB
 
 Investigation showed that the 44.1 GB counted all bytes sent by the container, including Docker's internal network traffic and Internet traffic.
 
-Communication between the two business containers was heavy. Within one availability zone, however, traffic over private IPs and ENIs was free, so two containers in one Fargate task would not be a problem. Cross-AZ placement was out of the question because internal traffic volume was too high.
+Communication between the two business containers was heavy. Within one availability zone, however, traffic over private IPs and ENIs was free, so even two separate Fargate tasks could work; that was not the obstacle. Cross-AZ placement was out of the question because internal traffic volume was too high.
 
 Then I questioned the architecture again. I had originally used three containers because I did not want a system tied to one fixed device. The goal was flexibility: any camera—or any camera-equipped device with a microphone and a way to play sound—should be able to connect. In the cloud, `ebo-engine` and `realtime-assistant` could theoretically be merged into one container. That might make troubleshooting harder, however, and would require a substantial architectural change.
 
@@ -586,3 +588,21 @@ Rather than forcing Codex to keep modifying the current code, it made more sense
 The Diagnostic Agent would remain on and be developed on the local machine.
 
 First, I would make the engineering design work locally. Then I could decide whether it was worthwhile to start a container on AWS or take another approach. I doubted that would happen soon, but the future is difficult to predict. The immediate goal was to complete the local system from an engineering perspective.
+
+---
+
+I then looked for a better model to plug into the system and happened to find Live1.
+
+No. Absolutely not. Live1 bills by time, including silence. In a use case as sparse as mine, paying even while both sides are silent simply would not work.
+
+I agree that some engineering could address this problem, but that is not a great fit. Besides, Live does not support images as input.
+
+> **Voice session costs**
+>
+> GPT-Live voice sessions are billed per second at the current model rate. Session duration is not rounded up to the next whole minute.
+>
+> Active session time includes time when the user speaks, the assistant speaks, both are silent, or the backend is working.
+
+---
+
+THE END. Next: [The AWS migration and Diagnostic Agent journal](ShootToTheAWSCloud_en.md).
