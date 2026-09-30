@@ -591,7 +591,3 @@ Active session time includes time when the user speaks, the assistant speaks, bo
 ---
 
 THE END
-
-但我不知道为什么它们在“牙”这个事情上会这样：你看它嘴里，说话的时候能明确感觉到是有牙的，非常明显，不是黑的，绝对是白的，而且上牙和下牙都有。我之后会去问一下，是不是因为我给它的背景视频采样里本身没有牙，才导致现在牙变成了这个样子。
-
-再看看吧，现在先不把它接到主项目里。先看能不能调，如果能调到一个跟现在主项目差不多、甚至更好的效果，那我就会考虑接进去；如果不行的话，其实我也 I'm happy with what I have
