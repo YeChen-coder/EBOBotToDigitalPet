@@ -590,4 +590,4 @@ Active session time includes time when the user speaks, the assistant speaks, bo
 
 ---
 
-THE END
+THE END ,  NEXT is https://github.com/YeChen-coder/EBOBotToDigitalPet/blob/main/ShootToTheAWSCloud_zh.md
