@@ -3,12 +3,18 @@ import { activeTargets } from './environment.mjs';
 
 const fields = ['ok', 'uptime_seconds', 'realtime_connected', 'video_streaming', 'audio_streaming',
   'last_frame_age_seconds', 'last_audio_age_seconds', 'transport_media_ok', 'source_audio_ok',
-  'media_starting', 'media_recovery_attempts', 'last_media_recovery_at', 'unplanned_realtime_reconnects'];
+  'media_starting', 'media_recovery_attempts', 'last_media_recovery_at', 'unplanned_realtime_reconnects',
+  'health_contract_version', 'listener_ready', 'mqtt_connected', 'frigate_ready', 'face_library_ready',
+  'memory_pending', 'memory_last_saved_at', 'memory_consolidation_at', 'sessions_completed', 'barge_in_count',
+  'engine_video_monitor_enabled', 'source_video_ok', 'assistant_enabled', 'visual_required', 'visual_available', 'audio_ready'];
 const sourceStatuses = new Set(['receiving', 'muted', 'disabled', 'disconnected', 'no_source_packets',
   'no_decoded_pcm', 'source_stale', 'monitor_stale', 'monitor_error', 'not_monitored']);
 export function healthEvidence(h) {
   const data = Object.fromEntries(fields.filter(k => typeof h[k] === 'boolean' || (typeof h[k] === 'number' && Number.isFinite(h[k]))).map(k => [k, h[k]]));
   data.source_audio_status = sourceStatuses.has(h.source_audio_status) ? h.source_audio_status : 'unknown';
+  if (['receiving','disabled','camera_off','disconnected','no_source_frames','source_stale','monitor_stale','monitor_error','not_monitored'].includes(h.source_video_status)) data.source_video_status = h.source_video_status;
+  if (['starting','standby','connecting','active','saving_memory','paused'].includes(h.session_state)) data.session_state = h.session_state;
+  if (['empty','summarizing','saved','no_memory','failed','consolidating','consolidated'].includes(h.memory_status)) data.memory_status = h.memory_status;
   return data;
 }
 export function classifyHealth(h, target, config) {
@@ -18,13 +24,24 @@ export function classifyHealth(h, target, config) {
   if (typeof h.ok !== 'boolean' || typeof h.realtime_connected !== 'boolean' || typeof h.video_streaming !== 'boolean') return result('fault', 'health_contract_invalid');
   if (h.media_starting === true && h.uptime_seconds < config.startupSeconds) return result('grace', 'starting');
   const intentional = ['muted', 'disabled'].includes(h.source_audio_status);
-  if (!h.realtime_connected) return result('fault', 'realtime_disconnected', !intentional && target.restartOnStall === true);
-  if (!h.video_streaming) return result('fault', 'video_stalled', !intentional && target.restartOnStall === true);
+  const audioFirst = h.health_contract_version === 3 && h.visual_required === false;
+  if (h.health_contract_version === 3 && !audioFirst) return result('fault', 'health_contract_invalid');
+  if (h.health_contract_version === 2 || audioFirst) {
+    if (h.listener_ready !== true) return result('fault', 'listener_unavailable');
+    if (!audioFirst && h.mqtt_connected !== true) return result('fault', 'frigate_mqtt_disconnected');
+    if (!audioFirst && h.frigate_ready !== true) return result('fault', 'frigate_camera_unavailable');
+    if (!audioFirst && h.engine_video_monitor_enabled === true && h.source_video_ok !== true) return result('fault', 'source_video_unconfirmed');
+    if (h.session_state === 'connecting') return result('grace', 'session_connecting');
+    if (!['standby','saving_memory','active','paused'].includes(h.session_state)) return result('fault', 'session_state_invalid');
+    if ((h.session_state === 'paused') !== (h.assistant_enabled === false)) return result('fault', 'health_contract_invalid');
+    if (h.session_state === 'active' && !h.realtime_connected) return result('fault', 'realtime_disconnected', !intentional && target.restartOnStall === true);
+  } else if (!h.realtime_connected) return result('fault', 'realtime_disconnected', !intentional && target.restartOnStall === true);
+  if (!audioFirst && !h.video_streaming) return result('fault', 'video_stalled', !intentional && target.restartOnStall === true);
   if (intentional) return result('suppressed', 'audio_intentionally_disabled');
   if (h.source_audio_status !== 'receiving' || h.source_audio_ok !== true) return result('fault', 'source_audio_unconfirmed');
   if (h.audio_streaming !== true) return result('fault', 'audio_transport_stalled', target.restartOnStall === true);
   if (h.ok !== true) return result('fault', 'health_inconsistent');
-  return result('healthy', 'healthy');
+  return result('healthy', h.assistant_enabled === false ? 'assistant_paused' : audioFirst && !h.video_streaming ? 'audio_ready_visual_unavailable' : h.health_contract_version >= 2 && h.session_state === 'standby' ? 'awaiting_family' : 'healthy');
 }
 
 export async function observe(config, bridge, fetchJson = jsonFetch) {

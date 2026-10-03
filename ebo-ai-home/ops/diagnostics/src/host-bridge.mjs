@@ -13,6 +13,7 @@ import { createRuntimeIO } from './runtime-io.mjs';
 import { serveDashboard } from './dashboard.mjs';
 import { ConversationLog } from './conversations.mjs';
 import { BillingMonitor } from './billing.mjs';
+import { createAssistantControl } from './assistant-control.mjs';
 
 const exec = promisify(execFile);
 const config = readConfig();
@@ -20,7 +21,8 @@ const data = process.env.HOST_DATA_DIR || './local/host';
 const awsHostPath = process.env.AWS_HOST_CONFIG_PATH || './local/aws-host.json';
 const awsHost = fs.existsSync(awsHostPath) ? JSON.parse(fs.readFileSync(awsHostPath, 'utf8').replace(/^\uFEFF/, '')) : { connections: {} };
 const calls = new Map();
-const adapters = new Map(config.targets.filter(t => t.adapter === 'aws-ecs').map(t => {
+const cloudTargets = config.runtimeControlScope === 'local' ? [] : config.targets.filter(t => t.adapter === 'aws-ecs');
+const adapters = new Map(cloudTargets.map(t => {
   const connection = { ...(awsHost.connections[t.aws.connection] || {}), allowRootReadOnce: false };
   const call = createAwsCli(connection, t); calls.set(t.id, call);
   return [t.id, new AwsEcsAdapter(t, config, connection,
@@ -33,7 +35,7 @@ const runtime = new RuntimeControl(new Store(path.join(data, 'runtime.json'), {}
 let conversations;
 try {
   conversations = new ConversationLog({ store: new Store(path.join(data, 'conversations.json'), {}),
-    targets: config.targets.filter(t => t.adapter === 'aws-ecs'), calls, directory: path.resolve('../../assistant-data'), settings: config.conversationLogs });
+    targets: cloudTargets, calls, directory: path.resolve('../../assistant-data'), settings: config.conversationLogs });
 } catch { audit('conversation_initialization_failed'); }
 const billing = new BillingMonitor({ store: new Store(path.join(data, 'billing.json'), {}),
   awsCall: calls.values().next().value, openAIKey: process.env.OPENAI_ADMIN_KEY || '' });
@@ -79,7 +81,8 @@ serve({ host: process.env.BRIDGE_HOST || '0.0.0.0', port: Number(process.env.BRI
     if (method === 'POST' && url === '/restart' && (runtime.busy || runtime.status().monitoringSuppressed)) return { code: 409, body: { error: 'runtime_busy' } };
     return bridge.route(method, url, body);
   } });
-serveDashboard({ runtime, reportDir: path.resolve('local/health-report'), config, awsHost, conversations, billing });
+const assistantControl = createAssistantControl({runtime, envFile:path.resolve('../../.env')});
+serveDashboard({ runtime, reportDir: path.resolve('local/health-report'), config, awsHost, conversations, billing, assistantControl });
 audit('host_bridge_started', { observationOnly: config.observationOnly, guardianAutoRestart: config.guardianAutoRestart });
 let watcherBadSince = null; let watcherNotified = false; let nextRuntimePoll = 0;
 while (true) {

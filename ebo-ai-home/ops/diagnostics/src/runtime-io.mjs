@@ -2,12 +2,14 @@ import path from 'node:path';
 import { now, sleep } from './common.mjs';
 import { classifyHealth } from './probes.mjs';
 
-const names = ['homeassistant', 'ebo-engine', 'realtime-assistant'];
+const serviceNames = { homeassistant:'homeassistant', engine:'ebo-engine', assistant:'realtime-assistant', frigate:'frigate', mosquitto:'mosquitto' };
 const stopped = s => ['exited', 'created', 'dead', 'missing'].includes(s);
 
 export function createRuntimeIO({ config, docker, adapters, calls, projectRoot, clock = now, pause = sleep }) {
   const locals = config.targets.filter(t => !t.adapter || t.adapter === 'docker');
-  const clouds = config.targets.filter(t => t.adapter === 'aws-ecs');
+  const names = locals.map(t => serviceNames[t.id]);
+  const localOnly = config.runtimeControlScope === 'local';
+  const clouds = localOnly ? [] : config.targets.filter(t => t.adapter === 'aws-ecs');
   const compose = ['compose', '--project-directory', path.resolve(projectRoot), '-f', path.resolve(projectRoot, 'compose.yaml'), '--profile', 'assistant'];
   async function localState() {
     try { await docker(['info', '--format', '{{.ServerVersion}}']); } catch { return { known: false, stopped: null, error: 'docker_unavailable', containers: [] }; }
@@ -65,6 +67,7 @@ export function createRuntimeIO({ config, docker, adapters, calls, projectRoot, 
   const io = {
     async inspect() {
       const local = await localState();
+      if (localOnly) return { observedAt: clock(), local, cloud: { managed: false, known: false, stopped: null, services: [] } };
       const services = await Promise.all(clouds.map(async t => {
         try { return await cloudState(t); } catch (e) { return { id: t.id, known: false, stopped: null, error: /^aws_[a-z_]+$/.test(e.message) ? e.message : 'aws_collection_failed' }; }
       }));
@@ -108,14 +111,13 @@ export function createRuntimeIO({ config, docker, adapters, calls, projectRoot, 
     },
     async startLocal() {
       for (const t of clouds) if (!(await cloudState(t)).stopped) throw new Error('aws_stop_unverified');
-      if (locals.length !== 3 || locals.some(t => t.enabled === false)) throw new Error('runtime_operation_failed');
+      if (locals.length < 3 || names.some(n => !n) || locals.some(t => t.enabled === false)) throw new Error('runtime_operation_failed');
       const before = await localState();
       for (const c of before.containers.filter(c => c.status === 'paused')) await docker(['unpause', c.name]);
       await docker([...compose, 'up', '-d', '--no-build', ...names], 180000);
       for (const t of locals) await docker(['update', '--restart=unless-stopped', t.container]);
     },
-    async waitHealthy(mode, onSample = () => {}) {
-      await until(async () => {
+    async checkHealthy(mode, onSample = () => {}) {
         if (mode === 'aws') {
           await Promise.all(clouds.map(t => adapters.get(t.id).refresh(true)));
           const checks = clouds.map(t => { const o = adapters.get(t.id).snapshot().observation; return { target: t.id, status: o.status, code: o.code, at: clock() }; });
@@ -135,12 +137,19 @@ export function createRuntimeIO({ config, docker, adapters, calls, projectRoot, 
           } catch { return false; }
         }
         return true;
-      }, 'runtime_health_timeout');
+    },
+    async waitHealthy(mode, onSample = () => {}) {
+      await until(() => io.checkHealthy(mode, onSample), 'runtime_health_timeout');
     },
     matches(mode, actual) {
+      if (localOnly) {
+        if (!actual?.local.known) return false;
+        if (mode === 'stopped') return actual.local.stopped;
+        return mode === 'local' && actual.local.containers.length === locals.length && actual.local.containers.every(c => c.status === 'running');
+      }
       if (!actual?.local.known || !actual.cloud.known) return false;
       if (mode === 'stopped') return actual.local.stopped && actual.cloud.stopped;
-      if (mode === 'local') return actual.cloud.stopped && actual.local.containers.length === 3 && actual.local.containers.every(c => c.status === 'running');
+      if (mode === 'local') return actual.cloud.stopped && actual.local.containers.length === locals.length && actual.local.containers.every(c => c.status === 'running');
       return actual.local.stopped && actual.cloud.services.length > 0 && actual.cloud.services.every(s => s.desiredCount === 1 && s.runningCount === 1 && s.pendingCount === 0 && s.tasks.length === 1 && s.tasks[0].status === 'RUNNING');
     },
   };

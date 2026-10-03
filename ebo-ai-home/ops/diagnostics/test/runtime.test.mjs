@@ -15,7 +15,9 @@ import http from 'node:http';
 
 const memory = value => ({ value, save() {} });
 const cloud = JSON.parse(fs.readFileSync(new URL('../aws-target.example.json', import.meta.url)));
-const base = JSON.parse(fs.readFileSync(new URL('../config.example.json', import.meta.url)));
+cloud.architecture = 'specter-ebo-v2'; // This fixture represents an upgraded test deployment.
+// Legacy cloud-control tests opt in explicitly; the public release defaults to local scope.
+const base = { ...JSON.parse(fs.readFileSync(new URL('../config.example.json', import.meta.url))), runtimeControlScope: 'all' };
 function fixture() {
   const calls = [];
   const actual = { observedAt: 1000, local: { known: true, stopped: true, containers: [] }, cloud: { known: true, stopped: true, services: [] } };
@@ -79,6 +81,30 @@ test('health timeout permits diagnostics without claiming successful switching',
   const f = fixture(); f.io.waitHealthy = async () => { throw new Error('runtime_health_timeout'); };
   f.runtime.request('aws'); await f.runtime.pending;
   assert.equal(f.runtime.status().phase, 'failed'); assert.equal(f.runtime.status().monitoringSuppressed, false);
+});
+
+test('old cloud architecture is rejected before durable intent or any stop', () => {
+  const f=fixture(); f.config.requiredArchitecture='specter-ebo-v2';
+  f.config.targets=f.config.targets.map(t=>({...t,architecture:null}));
+  assert.equal(f.runtime.request('aws').body.error,'cloud_upgrade_required');
+  assert.equal(f.store.value.phase,'unmanaged'); assert.deepEqual(f.calls,[]);
+});
+
+test('failed transition can recover through fresh read-only inventory and functional health', async () => {
+  const f=fixture(); Object.assign(f.store.value,{desired:'local',phase:'failed',error:'aws_collection_failed'});
+  f.io.checkHealthy=async()=>{f.calls.push('checkHealthy');return true;};
+  await f.runtime.poll();
+  assert.deepEqual(f.calls,['checkHealthy']); assert.equal(f.store.value.phase,'ready');
+  assert.equal(f.store.value.history.at(-1).source,'read_only_verification');
+  assert.equal(f.runtime.status().monitoringSuppressed,false);
+});
+
+test('read-only recovery refuses unhealthy or unknown current state', async () => {
+  const f=fixture(); Object.assign(f.store.value,{desired:'local',phase:'failed',error:'aws_collection_failed'});
+  f.io.checkHealthy=async()=>false;
+  await f.runtime.poll(); assert.equal(f.store.value.phase,'failed');
+  f.io.checkHealthy=async()=>assert.fail('must not trust unknown inventory'); f.io.matches=()=>false;
+  await f.runtime.poll(); assert.equal(f.store.value.error,'aws_collection_failed');
 });
 test('first migration is read-only; explicit stop subsequently enforces inactive shutdown', async () => {
   const f = fixture(); f.actual.local.stopped = false; f.actual.cloud.stopped = false;
@@ -150,7 +176,7 @@ test('conversation endpoint reads cached view only and rejects foreign hosts', a
   assert.equal(denied,403);assert.deepEqual(limits,[100]);
 });
 
-function ioFixture() {
+function ioFixture(overrides = {}) {
   let at = 1000; const writes = []; let desired = 1; let running = 1; let stopping = false;
   const local = new Map(base.targets.map(t => [t.container, 'running']));
   const call = async (args, options) => {
@@ -170,14 +196,41 @@ function ioFixture() {
     if (args[0] === 'stop') local.set(args.at(-1),'exited');
     return {stdout:''};
   };
-  const config = { ...base, targets:[...base.targets,cloud] };
+  const config = { ...base, targets:[...base.targets,cloud], ...overrides };
   const calls = new Map([[cloud.id,call]]);
   const io = createRuntimeIO({ config,docker,calls,adapters:new Map(),projectRoot:'.',clock:()=>at,pause:async()=>{at+=100;} });
   return { io,writes,calls,call,local,setStopping:()=>{stopping=true;},setCloudStopped:()=>{desired=0;running=0;} };
 }
 test('local shutdown disables all restart policies and verifies every business container', async () => {
   const f=ioFixture(); await f.io.stopLocal(); assert.equal((await f.io.inspect()).local.stopped,true);
-  assert.equal(f.writes.filter(x=>x.args[0]==='update'&&x.args[1]==='--restart=no').length,3);
+  assert.equal(f.writes.filter(x=>x.args[0]==='update'&&x.args[1]==='--restart=no').length,5);
+});
+
+test('local-only startup and shutdown never call AWS or claim a verified cloud state', async () => {
+  const f = ioFixture({runtimeControlScope:'local'});
+  f.calls.set(cloud.id, async () => { assert.fail('Local-only workflow must not call AWS'); });
+  await f.io.startLocal();
+  let actual = await f.io.inspect();
+  assert.equal(actual.cloud.managed, false); assert.equal(actual.cloud.known, false); assert.equal(actual.cloud.stopped, null);
+  assert.equal(f.io.matches('local', actual), true); assert.equal(f.io.matches('aws', actual), false);
+  await f.io.stopLocal(); await f.io.stopCloud();
+  actual = await f.io.inspect(); assert.equal(f.io.matches('stopped', actual), true);
+});
+
+test('local-only controller excludes cloud lifecycle steps and rejects cloud activation', async () => {
+  const f = fixture(); f.config.runtimeControlScope = 'local';
+  f.io.stopCloud = async () => assert.fail('Cloud lifecycle step must be skipped');
+  assert.equal(f.runtime.request('aws').body.error, 'cloud_disabled'); assert.deepEqual(f.calls, []);
+  f.runtime.request('local'); await f.runtime.pending;
+  assert.deepEqual(f.calls, ['startLocal','waitHealthy']); assert.equal(f.runtime.status().scope, 'local');
+  f.calls.length = 0; f.runtime.request('stopped'); await f.runtime.pending;
+  assert.deepEqual(f.calls, ['stopLocal']); assert.equal(f.store.value.phase, 'ready');
+});
+
+test('local-only scope does not resume an old cloud selection', () => {
+  const f = fixture(); f.config.runtimeControlScope = 'local'; f.store.value.desired = 'aws';
+  const runtime = new RuntimeControl(f.store, f.config, f.io);
+  assert.equal(runtime.status().desired, 'stopped'); assert.deepEqual(activeTargets(f.config), []);
 });
 test('cloud shutdown sets desiredCount zero, never stop-task, and waits for STOPPING tasks', async () => {
   const f=ioFixture(); f.setStopping();

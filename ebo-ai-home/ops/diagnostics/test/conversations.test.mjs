@@ -38,10 +38,18 @@ test('consecutive user turns and assistant-only messages are never silently disc
   const groups=groupConversations([row('assistant','solo',-20),row('user','u1',0),row('user','u2',10),row('assistant','a',20)]);
   assert.deepEqual(groups.map(g=>g.messages.map(m=>m.message)),[['u2','a'],['u1'],['solo']]);
 });
+test('independent live and gate transcripts remain distinct in the same turn',()=>{
+  const gate=normalizeConversation({event:'conversation.user.transcript',received_at:at/1000,item_id:'gate-1',session_started_at:1,transcript:'不了解。'},{scope:'local'});
+  const live=normalizeConversation({event:'conversation.user.live_transcript',received_at:(at+2000)/1000,item_id:'live-1',session_started_at:1,transcript:'我不了解。'},{scope:'local'});
+  assert.notEqual(gate.id,live.id);
+  const f=fixture();f.log.merge([gate,live]);
+  assert.deepEqual(f.log.view().groups[0].messages.map(m=>[m.source,m.message]),[['gate','不了解。'],['live','我不了解。']]);
+  assert.equal(f.log.view().groups.length,1);
+});
 test('cache deduplicates overlap and rewrites but preserves repeated spoken text',()=>{
   const f=fixture();f.log.merge([row('user','id1',0,'same'),row('user','id2',10,'same'),row('user','id1',0,'same')]);
   assert.equal(f.store.value.messages.length,2);f.log.merge([row('user','id1',0,'updated')]);assert.equal(f.store.value.messages.length,2);
-  const payload=f.log.view();assert.equal(payload.groups.length,2);assert.deepEqual(Object.keys(payload.groups[0].messages[0]).sort(),['message','role','timestamp']);
+  const payload=f.log.view();assert.equal(payload.groups.length,2);assert.deepEqual(Object.keys(payload.groups[0].messages[0]).sort(),['message','role','source','timestamp']);
 });
 test('empty cloud pages with tokens continue; checkpoint advances only after final page',async()=>{
   const f=fixture([{events:[],nextToken:'page2'},{events:[event('user','u')],nextToken:'page3'},{events:[event('assistant','a',10)]}]);
@@ -117,4 +125,13 @@ test('local files tolerate malformed/partial lines and re-read replacements',asy
   const c=await readLocalConversations(dir,b.fingerprints);assert.equal(c.messages.length,0);
   await fs.writeFile(file,line.replace('hello','revised message')+'\n');assert.equal((await readLocalConversations(dir,b.fingerprints)).messages[0].message,'revised message');
   assert.deepEqual(a.missing,['assistant_outputs.jsonl']);
+});
+test('local conversation reader loads both user transcript files with source labels',async t=>{
+  const dir=await fs.mkdtemp(path.join(os.tmpdir(),'ebo-conversations-'));t.after(()=>fs.rm(dir,{recursive:true,force:true}));
+  const record=(id,transcript)=>JSON.stringify({received_at:at/1000,item_id:id,session_started_at:1,transcript})+'\n';
+  await fs.writeFile(path.join(dir,'transcripts.jsonl'),record('gate','回复判定'));
+  await fs.writeFile(path.join(dir,'live_transcripts.jsonl'),record('live','实时识别'));
+  const read=await readLocalConversations(dir);
+  assert.deepEqual(read.messages.map(m=>[m.source,m.message]),[['gate','回复判定'],['live','实时识别']]);
+  assert.deepEqual(read.missing,['assistant_outputs.jsonl']);
 });

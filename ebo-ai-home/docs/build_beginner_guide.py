@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from docx import Document
@@ -12,7 +13,7 @@ from docx.shared import Inches, Pt, RGBColor
 ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / "docs" / "assets"
 OUTPUT = ROOT / "docs" / "EBO_AI_新手使用手册.docx"
-ERROR_IMAGE = ASSETS / "private-error-example.png"  # Supply your own sanitized image.
+ERROR_IMAGE = Path(os.environ.get("EBO_ERROR_IMAGE", ASSETS / "error-example.png"))
 
 BLUE = "2E74B5"
 DARK_BLUE = "1F4D78"
@@ -481,7 +482,7 @@ add_table(doc, ["建议", "原因"], [
 ], [3000, 6360])
 add_heading(doc, "当前隔离项目的位置", 2)
 add_table(doc, ["内容", "位置"], [
-    ("整个项目", str(ROOT)),
+    ("整个项目", r"<repository>"),
     ("AI 通用脚本", r"homeassistant-config\packages\ai_camera_adapter.yaml"),
     ("AI 小伙伴面板", r"homeassistant-config\dashboards\ai-playmate.yaml"),
     ("本手册", r"docs\EBO_AI_新手使用手册.docx"),

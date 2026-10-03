@@ -1,5 +1,7 @@
 # 统一运行控制验收 · 2026-09-15
 
+**2026-10-03 当前版本：本地 `specter-ebo-v2` 已更新；新版 Diagnostic Dashboard 的 AWS 端尚未迁移完成或验证。** 公开配置为 `runtimeEnvironment=local`、`runtimeControlScope=local`，只管理本地五个业务服务；云端启动请求被拒绝，本地启停不查询或启停 AWS。旧 AWS 适配器、文档和历史实测保留作迁移参考，不能证明新版云端可用。详见 [版本说明与 AWS 待办](../../docs/RELEASE-2026-10-03.md)。
+
 ## 自动验证
 
 `node --test test/*.test.mjs`：86 项通过。

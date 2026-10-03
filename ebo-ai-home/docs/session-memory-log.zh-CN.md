@@ -1,3 +1,9 @@
+# 历史说明
+
+此日志属于迁移前的轮换/断线交接机制。2026-09-30 起新会话不再读取或写入此动态交接记忆，现有文件仅作历史保留。当前父母各自记忆见 [Specter 迁移说明](specter-migration.zh-CN.md)。
+
+---
+
 # 动态记忆日志
 
 这份日志回答两个问题：新会话实际带上了什么记忆，以及服务器是否确认了这份会话配置。
@@ -7,7 +13,7 @@
 宿主机文件夹：
 
 ```text
-C:\Projects\ebo-ai-home\assistant-data\logs
+<repository>\assistant-data\logs
 ```
 
 当前文件是 `session-memory.jsonl`，用记事本或文本编辑器即可打开，不需要 Docker 命令。

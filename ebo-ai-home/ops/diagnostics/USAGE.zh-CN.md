@@ -1,17 +1,19 @@
 # Diagnostic Agent 操作手册
 
-**2026-09-15 更新：日常请使用 [统一运行与诊断页面](http://127.0.0.1:8179)。** 三个按钮会实际切换业务位置或全部停止；选择持久保存，诊断只关注所选环境。`environment` 命令现与页面一致，已不再只是切换监控。首次安装需配置 AWS 启停权限，详见 [统一页面说明](HEALTH-REPORT.zh-CN.md)。
+**2026-10-03 当前版本：本地 `specter-ebo-v2` 已更新；新版 Diagnostic Dashboard 的 AWS 端尚未迁移完成或验证。** 公开配置为 `runtimeEnvironment=local`、`runtimeControlScope=local`，只管理本地五个业务服务；云端启动请求被拒绝，本地启停不查询或启停 AWS。旧 AWS 适配器、文档和历史实测保留作迁移参考，不能证明新版云端可用。详见 [版本说明与 AWS 待办](../../docs/RELEASE-2026-10-03.md)。
+
+日常使用 [统一运行与诊断页面](http://127.0.0.1:8179)。当前只启停本地业务，支持 AI 暂停/恢复与父母会话控制；首次本地安装不需要 AWS 启停权限。见 [统一页面说明](HEALTH-REPORT.zh-CN.md)。
 
 这是一套后台监控系统。正常时不需要打开 Codex 对话，也不会持续调用模型。Watcher 定期采样；固定规则确认故障且等待自愈/有限恢复无效后，才启动诊断。
 
-## 这台电脑的当前配置
+## 当前公开版本的配置边界
 
 | 项目 | 当前设置 |
 |---|---|
-| 业务环境 | `runtimeEnvironment=aws`；本地与云端互斥选择，非当前环境不采样、不恢复 |
-| 云端监控 | AWS ca-central-1，ECS `ebo-cloud-lab`，每 60 秒采样 |
-| AWS 身份 | 独立只读 IAM 用户 `ebo-diagnostics-reader`；无云端重启/部署权限 |
-| 本地业务 | Engine、Assistant、Home Assistant 均排除业务健康判断，云端运行时无需开启 |
+| 业务环境 | `runtimeEnvironment=local`、`runtimeControlScope=local`；本地管理 |
+| 云端监控 | 新版 AWS 端尚未迁移完成；旧版采样记录为历史参考 |
+| AWS 身份 | 本地部署无需 AWS 运行控制身份；旧身份配置留在宿主机 |
+| 本地业务 | Engine、Assistant、Home Assistant、Frigate、Mosquitto 纳入本地健康判断 |
 | 一线诊断 | Codex SDK，`gpt-5.6-luna`，推理 `low` |
 | 高级诊断 | Codex SDK，`gpt-5.6-sol`，推理 `high` |
 | 升级条件 | 一线无法确定原因、失败、超时、被禁用或 API 未配置时升级；可改为每次升级 |
@@ -19,7 +21,7 @@
 
 四个独立容器：Watcher、诊断调度、一线 Codex、高级 Codex。两个模型共用同一套 worker 代码，但有不同模型参数、任务队列、数据卷和登录卷。AWS 凭据只由宿主机读取，不交给任何模型。
 
-采样范围、费用实测、各个时间参数和本地/云端切换，见 [采样、费用与环境说明](SAMPLING.zh-CN.md)。当前每分钟正常采样约 105 KB，按整月折算约 4.3 GiB 返回数据；模型只在故障诊断时使用。
+采样范围、费用实测、各个时间参数和本地/云端切换，见 [采样、费用与环境说明](SAMPLING.zh-CN.md)。旧版云端每分钟采样约 105 KB、整月约 4.3 GiB 是历史实测，不代表新版本地或新版 AWS 开销；模型只在故障诊断时使用。
 
 ## 平时怎么开和看
 
@@ -47,6 +49,8 @@ cd <repository>\ops\diagnostics
 
 `start` 只启动本地运维容器与辅助任务，不会启动旧本地 Engine，也不会部署或重启云端业务。平时无需反复 start。已安装当前 Windows 用户登录时启动的宿主机任务，运维容器使用 `unless-stopped`；电脑必须开机、登录、联网且 Docker Desktop 已运行。手动 stop 后，下次用 start 恢复。
 
+统一 Dashboard 还显示两个独立花销监测：OpenAI API 组织本月至今费用，以及 AWS 账号本月至今基础设施费用和最近入账日。页面刷新只读取本机缓存，不直接请求供应商。OpenAI 每 15 分钟最多同步一次；AWS Cost Explorer 每 6 小时最多同步一次（每个分页请求当前收费 0.01 美元，因此正常上限约为每月 1.20 美元）。当前月数据可能延迟或仍是预估值，不能代替最终发票。
+
 状态含义：`healthy`=探测正常；`grace`=启动/部署/自愈等待中；`suppressed`=维护、停用或有意关闭功能；`fault`=有异常。故障阶段 `monitoring_failed` 表示拿不到可靠监控数据，并不证明业务挂了。若没有诊断报告，可能是一直健康，或固定恢复已经成功，这是正常行为。
 
 ## 暂停和停止
@@ -71,7 +75,8 @@ cd <repository>\ops\diagnostics
 .\scripts\diagnostics.ps1 sampling -Seconds 120
 
 # 实际切换运行位置，或停止两边业务（三选一）
-.\scripts\diagnostics.ps1 environment -Environment aws
+# 历史云端操作：新版迁移并验证后才可启用；当前本地作用域会拒绝此请求
+# .\scripts\diagnostics.ps1 environment -Environment aws
 .\scripts\diagnostics.ps1 environment -Environment local
 .\scripts\diagnostics.ps1 environment -Environment stopped
 
@@ -79,7 +84,7 @@ cd <repository>\ops\diagnostics
 .\scripts\diagnostics.ps1 sampling-cost
 ```
 
-环境命令与 Dashboard 相同：先停止旧环境并确认，再启动新环境；停止模式会尝试停止两边。本地模式需要三个业务容器，云端模式只需 Fargate 中两个业务容器。本机诊断四容器继续运行，用来保留控制入口和检查结果。手动编辑频率：顶层 `pollSeconds` 控制 Watcher 本地检查；云目标 `aws.pollSeconds` 才控制 AWS 请求间隔。修改采样文件后执行 `reload` 生效。
+当前环境命令与 Dashboard 均只管理本地五个业务容器，停止模式只停止本地业务。旧版的跨环境切换与双容器 Fargate 布局是历史实现，迁移完成前不适用于新版。本机诊断四容器继续运行，用来保留控制入口和检查结果。手动编辑频率：顶层 `pollSeconds` 控制 Watcher 本地检查；云目标 `aws.pollSeconds` 才控制 AWS 请求间隔。修改采样文件后执行 `reload` 生效。
 
 ## 怎么换模型或切回原 API
 
@@ -135,6 +140,10 @@ reload 会重建运维容器，进行中的诊断会中断，历史与恢复预�
 Telegram：填写 `.env` 的 `TELEGRAM_BOT_TOKEN`、`TELEGRAM_CHAT_ID`，再 reload。通知只含故障摘要，不发送家庭对话或原始日志。当前 Windows 勿扰设置可能隐藏本地提示，报告仍保留在诊断系统中。
 
 AWS 凭据保存在 `%USERPROFILE%\.aws\ebo-diagnostics`，不在业务项目或镜像内；目录仅当前用户与 SYSTEM 可访问。宿主机 `local/aws-host.json` 引用此位置。该 IAM 用户没有控制台密码，只有读取策略；访问密钥需按使用周期轮换，撤销后 Watcher 会报告监控失效。
+
+OpenAI 花销监测必须使用单独的组织管理员 API Key；普通项目 Key、`CODEX_API_KEY` 和 Codex 登录都不具备读取组织账单的权限。在 `.env` 填写 `OPENAI_ADMIN_KEY` 后执行 `reload`。Key 只由本机 Host Bridge 读取，不会进入浏览器、诊断容器、报告或账单缓存。AWS 花销监测复用专用只读身份，并额外需要全局只读权限 `ce:GetCostAndUsage`；生成的 reader policy 已包含该权限。Dashboard 展示的是整个 OpenAI 组织与整个 AWS 账号，而不是单个模型、ECS 服务或任务的归因费用。
+
+不熟悉 `.env` 时，在本目录运行 `powershell.exe -NoProfile -File scripts/configure-openai-billing.ps1 -OpenAdminKeysPage`。脚本会打开官方 Admin Keys 页面，以隐藏输入方式接收创建后只显示一次的 `sk-admin-...`，写入本机 `.env`、重启 Host Bridge，并验证 Dashboard 是否成功读到账单；密钥不会打印到屏幕。
 
 当前云端自动替换关闭：先交给 ECS 自愈；若仍异常，诊断和通知。未来要开启 Task 替换，需要独立的执行身份，并同时配置 `actionProfile`、`allowTaskReplacement=true` 和目标 `restartOnStall=true`，详见 [AWS 接入说明](AWS.zh-CN.md)。不需要改两级模型代码。
 

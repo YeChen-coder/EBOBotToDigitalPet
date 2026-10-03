@@ -8,7 +8,9 @@ $ProjectDirectory = Split-Path -Parent $PSScriptRoot
 $AssistantContainer = "ebo-ai-home-realtime-assistant"
 $ProtectedContainers = @(
     "ebo-ai-home-homeassistant",
-    "ebo-ai-home-ebo-engine"
+    "ebo-ai-home-ebo-engine",
+    "ebo-ai-home-frigate",
+    "ebo-ai-home-mosquitto"
 )
 $DockerReady = $false
 
@@ -113,7 +115,7 @@ try {
         throw "The Realtime Assistant container was not recreated."
     }
 
-    Write-Step "Waiting for Realtime, video, and audio to recover"
+    Write-Step "Waiting for the listener, Frigate video, and source audio"
     $watch = [Diagnostics.Stopwatch]::StartNew()
     $lastProgressAt = -15
     $health = $null
@@ -122,7 +124,7 @@ try {
         $ready = (
             $null -ne $health -and
             $health.ok -eq $true -and
-            $health.realtime_connected -eq $true -and
+            $health.listener_ready -eq $true -and
             $health.video_streaming -eq $true -and
             $health.audio_streaming -eq $true
         )
@@ -138,7 +140,7 @@ try {
                 "not responding"
             }
             else {
-                "realtime=$($health.realtime_connected), video=$($health.video_streaming), audio=$($health.audio_streaming)"
+                "session=$($health.session_state), listener=$($health.listener_ready), video=$($health.video_streaming), audio=$($health.audio_streaming)"
             }
             Write-Host "Waiting: $healthText"
         }
@@ -146,11 +148,11 @@ try {
     }
 
     Write-Step "Prompt update applied successfully"
-    Write-Host "Realtime connected: $($health.realtime_connected)" -ForegroundColor Green
+    Write-Host "Session: $($health.session_state) (standby is normal)" -ForegroundColor Green
     Write-Host "Video streaming: $($health.video_streaming)" -ForegroundColor Green
     Write-Host "Audio streaming: $($health.audio_streaming)" -ForegroundColor Green
     Write-Host "Home Assistant and EBO Engine were not restarted." -ForegroundColor Green
-    Write-Host "A new Realtime session is now using the prompt from .env."
+    Write-Host "The next family conversation will use the prompt from .env."
     exit 0
 }
 catch {

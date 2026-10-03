@@ -1,5 +1,7 @@
 # AWS 接入与运行边界
 
+**2026-10-03 当前版本：本地 `specter-ebo-v2` 已更新；新版 Diagnostic Dashboard 的 AWS 端尚未迁移完成或验证。** 公开配置为 `runtimeEnvironment=local`、`runtimeControlScope=local`，只管理本地五个业务服务；云端启动请求被拒绝，本地启停不查询或启停 AWS。旧 AWS 适配器、文档和历史实测保留作迁移参考，不能证明新版云端可用。详见 [版本说明与 AWS 待办](../../docs/RELEASE-2026-10-03.md)。
+
 AWS 是现有监控框架的运行环境适配器。诊断服务和 Codex Worker 不需要知道 AWS 凭据或 CLI，也不导入云端业务代码。第一版支持 ECS/Fargate Service；EC2、EKS 和 Lambda 需要另写适配器，不能仅改名称。
 
 ```mermaid
@@ -31,7 +33,7 @@ node --env-file=.env scripts/status.mjs
 
 root 登录仅可用 `aws-check.mjs --one-time-root-read` 做人工协作期间的单次验证。后台宿主机明确拒绝 root 身份，不会因这个参数改变长期配置。IAM 身份权限不能靠宿主机命令白名单替代。
 
-本机已在用户授权后完成专用只读 IAM 用户创建与验证，profile 为 `ebo-diagnostics-read`，凭据位于用户目录 `.aws/ebo-diagnostics`。云端目标已经退出维护并启动后台监控；执行身份和自动替换仍关闭。`scripts/provision-aws-reader.mjs --execute` 是人工授权后的安装入口，不属于运行中适配器接口。
+旧版本曾创建并验证专用只读 IAM 用户，profile 为 `ebo-diagnostics-read`，凭据位于用户目录 `.aws/ebo-diagnostics`。这是历史部署记录；当前新版只管理本地，不能据此推断新版云端监控已开启或迁移完成。`scripts/provision-aws-reader.mjs --execute` 是人工授权后的安装入口，不属于运行中适配器接口。
 
 | 可调项 | 默认 | 作用 |
 |---|---|---|

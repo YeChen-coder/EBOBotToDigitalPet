@@ -1,0 +1,63 @@
+mqtt:
+  enabled: true
+  host: mosquitto
+  port: 1883
+
+# Portable CPU decode/detection. EBO Engine supplies its existing RTSP stream.
+ffmpeg:
+  path: "7.0"
+
+detectors:
+  openvino:
+    type: openvino
+    device: CPU
+
+model:
+  width: 300
+  height: 300
+  input_tensor: nhwc
+  input_pixel_format: bgr
+  path: /openvino-model/ssdlite_mobilenet_v2.xml
+  labelmap_path: /openvino-model/coco_91cl_bkgr.txt
+
+face_recognition:
+  enabled: true
+  model_size: small
+  recognition_threshold: 0.90
+
+objects:
+  track:
+    - person
+
+record:
+  enabled: false
+snapshots:
+  enabled: false
+
+cameras:
+  ebo:
+    enabled: true
+    ffmpeg:
+      inputs:
+        - path: "{FRIGATE_EBO_RTSP_URL}"
+          # Only subscribe to video. The assistant consumes Opus separately;
+          # unused audio timestamps must not disrupt Frigate's video decoder.
+          input_args:
+            - -rtsp_transport
+            - tcp
+            - -timeout
+            - "10000000"
+            - -use_wallclock_as_timestamps
+            - "1"
+            - -allowed_media_types
+            - video
+            - -fflags
+            - +genpts+discardcorrupt
+          roles: [detect]
+    detect:
+      enabled: true
+      # Engine camera stream is resized by Frigate for object detection.
+      width: 1280
+      height: 720
+      fps: 5
+version: 0.18-0

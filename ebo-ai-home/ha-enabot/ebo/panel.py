@@ -104,7 +104,7 @@ def _robot(node):
 
 def _on_connect(client, userdata, flags, rc, properties=None):
     log("[panel] MQTT connected rc=%s" % rc)
-    for t in ("ebo/discovery/#", "+/status", "+/state", "+/camera/state", "+/camera/url", "+/audio_health"):
+    for t in ("ebo/discovery/#", "+/status", "+/state", "+/camera/state", "+/camera/url", "+/audio_health", "+/video_health"):
         client.subscribe(t)
 
 
@@ -138,8 +138,8 @@ def _on_message(client, userdata, msg):
                 r["camera"] = payload
             elif leaf == "camera/url":
                 r["url"] = payload
-            elif leaf == "audio_health":
-                r["audio_health"] = json.loads(payload)
+            elif leaf in {"audio_health", "video_health"}:
+                r[leaf] = json.loads(payload)
     except Exception as e:
         log("[panel] message error:", e)
 

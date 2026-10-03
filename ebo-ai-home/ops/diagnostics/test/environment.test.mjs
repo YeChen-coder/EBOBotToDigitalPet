@@ -14,8 +14,8 @@ const cloud = JSON.parse(fs.readFileSync(new URL('../aws-target.example.json', i
 const config = { ...local, observationOnly: false, targets: [...local.targets, cloud] };
 const memory = (value = {}) => ({ value, save() {} });
 
-test('explicit environment selects exactly three local containers OR the AWS service', () => {
-  assert.deepEqual(activeTargets(config).map(t => t.id), ['engine', 'assistant', 'homeassistant']);
+test('explicit environment selects the five local containers OR the AWS service', () => {
+  assert.deepEqual(activeTargets(config).map(t => t.id), ['engine', 'mosquitto', 'frigate', 'assistant', 'homeassistant']);
   assert.deepEqual(activeTargets({ ...config, runtimeEnvironment: 'aws' }).map(t => t.id), ['cloud-ebo']);
   for (const environment of [undefined, 'both', 'auto', 'cloud', 'AWS'])
     assert.throws(() => activeTargets({ ...config, runtimeEnvironment: environment }));
@@ -70,7 +70,7 @@ test('switching environment cancels old diagnosis and preserves its action budge
   assert.deepEqual(cancelled, ['old']); assert.equal(store.value.incidents.length, 0);
   assert.equal(store.value.scopes.assistant.closed[0].outcome, 'suppressed_not_verified');
   assert.equal(store.value.scopes.assistant.recoveries.length, 1);
-  assert.deepEqual(store.value.excludedTargets, ['engine', 'assistant', 'homeassistant']);
+  assert.deepEqual(store.value.excludedTargets, ['engine', 'mosquitto', 'frigate', 'assistant', 'homeassistant']);
 });
 
 test('mixed host and Watcher configurations fail as monitoring error without diagnosis', async () => {

@@ -1,15 +1,21 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [int]$DockerTimeoutSeconds = 240,
-    [int]$ServiceTimeoutSeconds = 300
+    [int]$ServiceTimeoutSeconds = 600,
+    [Alias('RebuildAllServices')][switch]$RebuildAllThree,
+    [switch]$SkipOpenBrowser
 )
 
 $ErrorActionPreference = "Stop"
 $ProjectDirectory = Split-Path -Parent $PSScriptRoot
+$DiagnosticDirectory = Join-Path $ProjectDirectory 'ops/diagnostics'
+$Services = @('homeassistant', 'ebo-engine', 'mosquitto', 'frigate', 'realtime-assistant')
 $RequiredContainers = @(
     "ebo-ai-home-homeassistant",
     "ebo-ai-home-ebo-engine",
-    "ebo-ai-home-realtime-assistant"
+    "ebo-ai-home-realtime-assistant",
+    "ebo-ai-home-frigate",
+    "ebo-ai-home-mosquitto"
 )
 $DockerReady = $false
 $DockerCliFound = $false
@@ -21,14 +27,77 @@ function Write-Step {
 }
 
 function Test-DockerEngine {
-    $null = & docker info --format "{{.ServerVersion}}" 2>$null
-    return $LASTEXITCODE -eq 0
+    try {
+        $null = & docker info --format "{{.ServerVersion}}" 2>$null
+        return $LASTEXITCODE -eq 0
+    } catch { return $false }
 }
 
-function Test-ContainerRunning {
-    param([string]$ContainerName)
-    $state = & docker inspect --format "{{.State.Running}}" $ContainerName 2>$null
-    return $LASTEXITCODE -eq 0 -and $state.Trim() -eq "true"
+function Set-DiagnosticMaintenance([bool]$Enabled) {
+    $configPath = Join-Path $DiagnosticDirectory 'config.local.json'
+    $config = Get-Content -LiteralPath $configPath -Raw | ConvertFrom-Json
+    $config.maintenance = $Enabled
+    $config.observationOnly = $Enabled
+    $config | Add-Member -NotePropertyName runtimeControlScope -NotePropertyValue 'local' -Force
+    [IO.File]::WriteAllText($configPath, ($config | ConvertTo-Json -Depth 30), (New-Object Text.UTF8Encoding($false)))
+}
+
+function Restart-ProjectBridge {
+    $taskName = 'EBO Diagnostics Host Bridge'
+    if (-not (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue)) {
+        & (Join-Path $DiagnosticDirectory 'scripts/install-host-task.ps1')
+    }
+    Enable-ScheduledTask -TaskName $taskName | Out-Null
+    & (Join-Path $DiagnosticDirectory 'scripts/restart-host-task.ps1')
+}
+
+function Start-LocalRuntime {
+    $tokenLine = Get-Content -LiteralPath (Join-Path $DiagnosticDirectory '.env') |
+        Where-Object { $_ -match '^BRIDGE_TOKEN=' } | Select-Object -First 1
+    if (-not $tokenLine) { throw 'BRIDGE_TOKEN is missing from diagnostic configuration.' }
+    $headers = @{ Authorization = 'Bearer ' + ($tokenLine -split '=', 2)[1].Trim() }
+    $url = 'http://127.0.0.1:8177/runtime'
+    $deadline = (Get-Date).AddMinutes(20)
+    # A background inventory poll can briefly own the controller. Wait/retry it.
+    do {
+        $state = Invoke-RestMethod -Uri $url -Headers $headers -TimeoutSec 15
+        if (-not $state.busy) {
+            try {
+                $null = Invoke-RestMethod -Uri $url -Headers $headers -Method Post `
+                    -ContentType 'application/json' -Body '{"mode":"local"}' -TimeoutSec 15
+                break
+            } catch {
+                if (-not $_.Exception.Response -or [int]$_.Exception.Response.StatusCode -ne 409) { throw }
+            }
+        }
+        if ((Get-Date) -ge $deadline) { throw 'Runtime controller remained busy; see the diagnostic dashboard.' }
+        Start-Sleep -Seconds 2
+    } while ($true)
+    $priorStep = ''
+    do {
+        $state = Invoke-RestMethod -Uri $url -Headers $headers -TimeoutSec 15
+        if ($state.step -ne $priorStep) {
+            Write-Host "Local startup step $($state.steps.Count) of 2..."
+            $priorStep = $state.step
+        }
+        if (-not $state.busy -and $state.phase -ne 'switching') {
+            if ($state.scope -ne 'local' -or $state.desired -ne 'local' -or $state.phase -ne 'ready') {
+                throw "Local transition failed (error: $($state.error)). See http://127.0.0.1:8179."
+            }
+            return
+        }
+        if ((Get-Date) -ge $deadline) { throw 'Local transition timed out; see the diagnostic dashboard.' }
+        Start-Sleep -Seconds 2
+    } while ($true)
+}
+
+function Test-ContainerReady([string]$ContainerName) {
+    try {
+        $json = & docker inspect --format '{{json .State}}' $ContainerName 2>$null
+        if ($LASTEXITCODE -ne 0) { return $false }
+        $state = $json | ConvertFrom-Json
+        return $state.Running -and (-not $state.Health -or $state.Health.Status -eq 'healthy')
+    } catch { return $false }
 }
 
 function Test-HomeAssistant {
@@ -141,27 +210,63 @@ try {
         throw "Docker Compose configuration validation failed."
     }
     Write-Host ".env and compose.yaml are valid." -ForegroundColor Green
-
-    Write-Step "Starting Home Assistant, EBO Engine, and Realtime Assistant"
-    # The host controller first verifies cloud shutdown. Never bypass saved runtime intent.
-    Push-Location (Join-Path $ProjectDirectory 'ops/diagnostics')
+    Push-Location $DiagnosticDirectory
     try {
-        & node --env-file=.env scripts/runtime.mjs local
-        if ($LASTEXITCODE -ne 0) { throw 'Local transition incomplete. Open http://127.0.0.1:8179 to inspect the blocking step.' }
+        & node scripts/setup.mjs
+        if ($LASTEXITCODE -ne 0) { throw 'Diagnostic configuration/source snapshot preparation failed.' }
+        & docker compose config --quiet
+        if ($LASTEXITCODE -ne 0) { throw 'Diagnostic Compose configuration validation failed.' }
     } finally { Pop-Location }
+
+    Write-Step 'Applying .env account settings while preserving EBO audio/video configuration'
+    & (Join-Path $PSScriptRoot 'prepare-ebo.ps1') -PreserveExistingOptions
+
+    # Build before replacing containers. Compose's
+    # cache rebuilds changed layers and reuses unchanged dependency layers.
+    if ($RebuildAllThree) {
+        Write-Step "Rebuilding EBO Engine and Realtime Assistant images"
+        # Home Assistant uses a published image and has no local Dockerfile.
+        & docker compose --profile assistant build ebo-engine realtime-assistant
+        if ($LASTEXITCODE -ne 0) {
+            throw "Docker image build failed with exit code $LASTEXITCODE."
+        }
+
+        Write-Step 'Rebuilding all diagnostic images'
+        Push-Location $DiagnosticDirectory
+        try {
+            & docker compose build
+            if ($LASTEXITCODE -ne 0) { throw 'Diagnostic image build failed.' }
+        } finally { Pop-Location }
+    }
+
+    Write-Step 'Pausing monitoring and restoring the host controller'
+    Set-DiagnosticMaintenance $true
+    Restart-ProjectBridge
+    Push-Location $DiagnosticDirectory
+    try {
+        & docker compose stop
+        if ($LASTEXITCODE -ne 0) { throw 'Could not pause diagnostic containers for startup.' }
+    } finally { Pop-Location }
+
+    Write-Step 'Recreating local containers to apply code, .env, Compose, and mounted configuration changes'
+    & docker compose --profile assistant create --force-recreate @Services
+    if ($LASTEXITCODE -ne 0) { throw 'Could not recreate local containers.' }
+
+    Write-Step 'Starting the rebuilt local services (AWS is outside this workflow)'
+    Start-LocalRuntime
 
     Write-Step "Waiting for all services and media streams"
     $serviceWatch = [Diagnostics.Stopwatch]::StartNew()
     $lastProgressAt = -15
     $assistantHealth = $null
     while ($true) {
-        $running = @($RequiredContainers | Where-Object { Test-ContainerRunning $_ })
+        $running = @($RequiredContainers | Where-Object { Test-ContainerReady $_ })
         $homeAssistantReady = Test-HomeAssistant
         $assistantHealth = Get-AssistantHealth
         $assistantReady = (
             $null -ne $assistantHealth -and
             $assistantHealth.ok -eq $true -and
-            $assistantHealth.realtime_connected -eq $true -and
+            $assistantHealth.listener_ready -eq $true -and
             $assistantHealth.video_streaming -eq $true -and
             $assistantHealth.audio_streaming -eq $true
         )
@@ -179,7 +284,7 @@ try {
                 "not responding"
             }
             else {
-                "realtime=$($assistantHealth.realtime_connected), video=$($assistantHealth.video_streaming), audio=$($assistantHealth.audio_streaming)"
+                "session=$($assistantHealth.session_state), listener=$($assistantHealth.listener_ready), video=$($assistantHealth.video_streaming), audio=$($assistantHealth.audio_streaming)"
             }
             Write-Host (
                 "Waiting: containers {0}/{1}, Home Assistant={2}, Assistant={3}" -f
@@ -189,16 +294,40 @@ try {
         Start-Sleep -Seconds 5
     }
 
+    Write-Step 'Restoring active diagnostics and the health reporter'
+    Set-DiagnosticMaintenance $false
+    Restart-ProjectBridge
+    Push-Location $DiagnosticDirectory
+    try {
+        & docker compose up -d --no-build --force-recreate --wait --wait-timeout 180
+        if ($LASTEXITCODE -ne 0) { throw 'Diagnostic containers did not become healthy.' }
+    } finally { Pop-Location }
+    $reportTaskName = 'EBO Diagnostics Health Report'
+    if (-not (Get-ScheduledTask -TaskName $reportTaskName -ErrorAction SilentlyContinue)) {
+        & (Join-Path $DiagnosticDirectory 'scripts/install-health-report-task.ps1')
+    } else {
+        Enable-ScheduledTask -TaskName $reportTaskName | Out-Null
+        Stop-ScheduledTask -TaskName $reportTaskName
+        Start-ScheduledTask -TaskName $reportTaskName
+    }
+    foreach ($taskName in @('EBO Diagnostics Host Bridge', $reportTaskName)) {
+        $task = Get-ScheduledTask -TaskName $taskName
+        if (-not $task.Settings.Enabled -or $task.State -ne 'Running') {
+            throw "Background task is not running: $taskName"
+        }
+    }
+
     Write-Step "Startup completed successfully"
     & docker compose --profile assistant ps
     Write-Host ""
     Write-Host "Home Assistant: http://localhost:8123" -ForegroundColor Green
     Write-Host "Assistant health: http://localhost:8099/health" -ForegroundColor Green
-    Write-Host "Realtime connected: $($assistantHealth.realtime_connected)"
+    Write-Host "Session: $($assistantHealth.session_state) (standby is normal)"
+    Write-Host "Dashboard: http://127.0.0.1:8179" -ForegroundColor Green
     Write-Host "Video streaming: $($assistantHealth.video_streaming)"
     Write-Host "Audio streaming: $($assistantHealth.audio_streaming)"
     Write-Host "Persisted WAV files: $($assistantHealth.output_audio_files_persisted)"
-    Start-Process -FilePath "http://localhost:8123" | Out-Null
+    if (-not $SkipOpenBrowser) { Start-Process -FilePath "http://localhost:8123" | Out-Null }
     exit 0
 }
 catch {
@@ -212,7 +341,7 @@ catch {
         & docker compose --profile assistant ps --all 2>&1 | ForEach-Object { Write-Host $_ }
         Write-Host ""
         Write-Host "Recent logs:" -ForegroundColor Yellow
-        & docker compose --profile assistant logs --tail 80 homeassistant ebo-engine realtime-assistant 2>&1 |
+        & docker compose --profile assistant logs --tail 80 homeassistant ebo-engine mosquitto frigate realtime-assistant 2>&1 |
             ForEach-Object { Write-Host $_ }
     }
     Write-Host ""

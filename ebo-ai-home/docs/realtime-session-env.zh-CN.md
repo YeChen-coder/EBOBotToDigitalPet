@@ -1,106 +1,84 @@
-# OpenAI Realtime Session 的 `.env` 参数
+# 当前 Realtime / Specter 框架 `.env` 参数
 
-本项目把 OpenAI 当前 `session.update` 中适合 EBO 常驻助手的行为参数暴露为环境变量。字段依据：
+此表对应 `specter-ebo-v2`，图像使用 Frigate，音频使用待机唤起、转写回复门控与默认轮流说话。完整示例为项目根目录 `.env.example`。参数修改后需重建容器；Prompt/参数可用 `scripts/reload-ebo-assistant-prompt.ps1`，代码/依赖需 `docker compose --profile assistant up -d --build`。
 
-- [Realtime client events：`session.update`](https://developers.openai.com/api/reference/resources/realtime/client-events)
-- [Realtime conversations](https://developers.openai.com/api/docs/guides/realtime-conversations)
-- [Voice activity detection](https://developers.openai.com/api/docs/guides/realtime-vad)
+## 模型与 Prompt
 
-修改项目根目录的 `.env` 后，双击桌面的 `应用 EBO Prompt 修改.cmd`，或者运行
-`scripts/reload-ebo-assistant-prompt.ps1`。环境变量只在容器创建时读取，所以必须重新创建
-`realtime-assistant` 容器；不需要重启 Home Assistant 或 EBO Engine。
-
-## 模型、回答与语音
-
-| `.env` 变量 | 默认值 | 可用值与作用 |
-|---|---:|---|
-| `OPENAI_REALTIME_MODEL` | `gpt-realtime-2.1` | Realtime 模型名称；当前实机 `.env` 可单独选择 Mini。 |
-| `OPENAI_REALTIME_VOICE` | `marin` | 内置 voice 名称，或 `voice_...` 自定义 Voice ID。一个 Session 首次产生音频后不能再换 Voice。 |
-| `OPENAI_REALTIME_OUTPUT_SPEED` | `1.0` | 输出语速，范围 `0.25` 到 `1.5`；只能在两次回答之间调整。 |
-| `OPENAI_REALTIME_OUTPUT_MODALITY` | `audio` | `audio` 会说话并产生文字 transcript；`text` 只输出文字，EBO 不会发声。 |
-| `OPENAI_REALTIME_REASONING_EFFORT` | 空 | 空值采用模型默认值；可设 `minimal`、`low`、`medium`、`high`、`xhigh`。模型不一定支持所有档位。 |
-| `OPENAI_REALTIME_MAX_OUTPUT_TOKENS` | `inf` | `inf` 或 `1` 到 `4096`；这是每次回答的上限，包含工具调用。 |
-| `OPENAI_REALTIME_INCLUDE_TRANSCRIPTION_LOGPROBS` | `false` | 是否要求输入转写事件附带 logprobs。 |
-
-`EBO_ASSISTANT_INSTRUCTIONS` 仍是直接发给 Session 的角色 Prompt。它不是新变量，但属于
-`session.instructions`，会继续和视觉规则、轮换记忆、断线恢复记录合并。
-
-## 输入转写
-
-| `.env` 变量 | 默认值 | 可用值与作用 |
-|---|---:|---|
-| `OPENAI_INPUT_TRANSCRIPTION_MODEL` | `gpt-transcribe` | 输入转写模型。 |
-| `OPENAI_INPUT_TRANSCRIPTION_DELAY` | 空 | `minimal`/`low`/`medium`/`high`/`xhigh`；当前只适用于 `gpt-realtime-whisper`。 |
-| `OPENAI_INPUT_TRANSCRIPTION_KEYWORDS_JSON` | `[]` | JSON 字符串数组，例如 `["EBO","药盒"]`；适用于 `gpt-transcribe`、`gpt-live-transcribe`。 |
-| `OPENAI_INPUT_TRANSCRIPTION_LANGUAGE` | 空 | 单一 ISO-639-1 语言提示，例如 `zh`。 |
-| `OPENAI_INPUT_TRANSCRIPTION_LANGUAGES_JSON` | `[]` | 候选语言 JSON 数组，例如 `["zh","en"]`。 |
-| `OPENAI_INPUT_TRANSCRIPTION_PROMPT` | 空 | 给转写模型的自由文本提示；不同转写模型的支持情况不同。 |
-
-输入转写在这个项目中不能整体关闭：它既用于保存家人说话的文字，也用于过滤空白或低信息音频后再决定
-是否创建回答。
-
-## 降噪与回合检测
-
-已有变量全部保留：
-
-| `.env` 变量 | 作用 |
+| 参数 | 默认值 / 含义 |
 |---|---|
-| `REALTIME_INPUT_NOISE_REDUCTION` | `off`、`near_field` 或 `far_field`。 |
-| `REALTIME_TURN_DETECTION_TYPE` | `server_vad` 或 `semantic_vad`。 |
-| `REALTIME_VAD_THRESHOLD` | Server VAD 激活阈值，范围 `0` 到 `1`。 |
-| `REALTIME_VAD_PREFIX_PADDING_MS` | Server VAD 检出说话前补回的音频。 |
-| `REALTIME_VAD_SILENCE_DURATION_MS` | Server VAD 将沉默判作回合结束的时长。 |
-| `REALTIME_VAD_IDLE_TIMEOUT_MS` | Server VAD 空闲后主动回应；`0` 关闭，否则官方范围是 `5000` 到 `30000`。 |
-| `REALTIME_SEMANTIC_VAD_EAGERNESS` | `auto`、`low`、`medium` 或 `high`。 |
-| `REALTIME_VAD_CREATE_RESPONSE` | 是否由 OpenAI 在检测到回合结束后直接创建回答。默认 `false`，由本地转写过滤后创建。 |
-| `REALTIME_VAD_INTERRUPT_RESPONSE` | 是否由云端检测到说话便取消回答；启用本地回声感知插话时会强制为 `false`。 |
+| `OPENAI_API_KEY` | 必填，仅本机保存 |
+| `EBO_ASSISTANT_INSTRUCTIONS` | 原 EBO 主 Prompt；按身份补充对应记忆和会话规则 |
+| `OPENAI_REALTIME_MODEL` | `gpt-realtime-2.1-mini` |
+| `OPENAI_REALTIME_VOICE` | `marin` |
+| `OPENAI_REALTIME_OUTPUT_SPEED` | `1.0`，范围 0.25–1.5 |
+| `OPENAI_INPUT_TRANSCRIPTION_MODEL` | `gpt-transcribe`，最终转写决定回复，并用于记录与总结 |
+| `OPENAI_INPUT_TRANSCRIPTION_DELAY` / `KEYWORDS_JSON` / `LANGUAGE` / `LANGUAGES_JSON` / `PROMPT` | 恢复读取对应 OPENAI_INPUT_TRANSCRIPTION 前缀参数，默认空或 [] |
+| `OPENAI_LIVE_TRANSCRIPTION_ENABLED` / `MODEL` / `DELAY` / `LANGUAGES_JSON` / `PROMPT` | 恢复对应完整前缀参数，默认 true / gpt-live-transcribe / low / ["zh"] / 空 |
+| `OPENAI_RESEARCH_MODEL` | `gpt-5.4-mini`，公开问题搜索 |
+| `OPENAI_RESEARCH_TIMEOUT_SECONDS` | `90` |
+| `EBO_TRACE_ENABLED` | `false` |
+| `OPENAI_AGENTS_TRACE_INCLUDE_SENSITIVE_DATA` | `false` |
 
-不能把 `turn_detection` 设为 `null`：当前 EBO 是常开麦克风而不是按键说话，程序没有关闭 VAD 后所需的
-手动 commit 控制面。
+固定使用 24 kHz、单声道 PCM16，输出音频。主会话工具为公开问题搜索和结束会话。主转写与独立 live 转写配置已恢复。原自定义 raw tools、Prompt 模板 JSON、推理/truncation 参数没有迁入。独立 live 转写只记录，不触发回复或插话。
 
-## OpenAI Prompt 模板
+## 音频与回合
 
-| `.env` 变量 | 默认值 | 作用 |
-|---|---:|---|
-| `OPENAI_REALTIME_PROMPT_ID` | 空 | OpenAI Dashboard 中保存的 Prompt ID。空值表示不用服务器 Prompt。 |
-| `OPENAI_REALTIME_PROMPT_VERSION` | 空 | 可选的固定版本。 |
-| `OPENAI_REALTIME_PROMPT_VARIABLES_JSON` | `{}` | 一行 JSON 对象，例如 `{"city":"Toronto"}`。 |
+| 参数 | 默认值 / 含义 |
+|---|---|
+| `EBO_AEC_ENABLED` | `true`，WebRTC AEC 与降噪 |
+| `EBO_AEC_DELAY_MS` | `0`，范围 0–500，AEC 延迟 |
+| `EBO_AEC_WARMUP_MS` | `500`，播放开始后的 AEC 预热窗口 |
+| `EBO_BARGE_IN_ENABLED` | `false`，默认轮流说话；设 true 才启用实验性本地插话 |
+| `EBO_VOICE_WAKE_ENABLED` | `true`，待机语音核查通过后开启会话 |
+| `EBO_PLAYBACK_TAIL_MS` | `800`，实际播放结束后的回声屏蔽窗口（200..5000） |
+| `EBO_PROACTIVE_GREETING_ENABLED` | `false`，默认人脸只辅助身份，不自动开启会话 |
+| `EBO_BARGE_IN_CONFIRM_MS` / `PREROLL_MS` / `VAD_MODE` | 恢复完整 EBO_BARGE_IN 前缀参数，默认 300 / 500 / 2 |
+| `EBO_BARGE_IN_ECHO_CORRELATION` / `RESIDUAL_RATIO` | 0.65 / 0.45 |
+| `EBO_SERVER_NOISE_REDUCTION` | `far_field`，也支持 `near_field`、`off` |
+| `REALTIME_VAD_THRESHOLD` | `0.65`，范围大于 0 小于 1 |
+| `EBO_VAD_PREFIX_PADDING_MS` | `300` |
+| `EBO_VAD_SILENCE_DURATION_MS` | `650` |
+| `EBO_AGORA_AEC_ENABLED` | `false`，原 Engine 处理关闭 |
+| `EBO_AGORA_NOISE_SUPPRESSION_ENABLED` | `false` |
+| `EBO_AGORA_AGC_ENABLED` | `false` |
 
-直接提供的 `EBO_ASSISTANT_INSTRUCTIONS` 会覆盖服务器 Prompt 中与它重叠的 Session 字段。填写 Version
-或 Variables 时必须同时填写 Prompt ID。
+server VAD 固定 `create_response=false`、`interrupt_response=false`，仅用于主转写分段。SDK 的 VAD 自动停止播放/取消/截断分支也已关闭。旧 `REALTIME_VAD_CREATE_RESPONSE` 和 `REALTIME_VAD_INTERRUPT_RESPONSE` 无法重新开启自动行为；实际 .env 也设为 false。本地插话确认参数已恢复，`REALTIME_INPUT_NOISE_REDUCTION` 仍由当前 `EBO_SERVER_NOISE_REDUCTION` 替代。查询 `/health` 的 `turn_detection`、`input_noise_reduction` 可查看会话建立后服务端确认值；待机未建立过会话时为空。
 
-## 上下文与成本
+## 身份、图像和会话
 
-| `.env` 变量 | 默认值 | 可用值与作用 |
-|---|---:|---|
-| `OPENAI_REALTIME_TRUNCATION_TYPE` | `retention_ratio` | `auto`、`disabled` 或 `retention_ratio`。`disabled` 在超过窗口时直接报错。 |
-| `OPENAI_REALTIME_RETENTION_RATIO` | `0.8` | `retention_ratio` 模式下每次裁剪后保留的比例，范围 `0` 到 `1`。 |
-| `OPENAI_REALTIME_POST_INSTRUCTIONS_TOKENS` | `8000` | Prompt 之后允许保留的会话 token 上限，不能高于模型窗口扣除最大输出后的容量。 |
+| 参数 | 默认值 / 含义 |
+|---|---|
+| `EBO_USERS_JSON` | `.env.example` 内爸爸 `father` / 妈妈 `mother`，含 `id`、`face_name`、`display_name` |
+| `EBO_FRIGATE_URL` | `http://frigate:5000`，容器内部 |
+| `EBO_CAMERA_NAME` | `ebo`，与 Frigate config 对应 |
+| `EBO_MQTT_HOST` / `EBO_MQTT_PORT` | `mosquitto` / `1883` |
+| `EBO_PROACTIVE_GREETING_ENABLED` | `true` |
+| `EBO_VISUAL_ENABLED` | `true` |
+| `EBO_MIN_FACE_SCORE` / `EBO_MIN_PERSON_AREA` | `0.90` / `40000` |
+| `EBO_ABSENCE_SECONDS` / `EBO_COOLDOWN_SECONDS` | `25` / `90` |
+| `EBO_SESSION_IDLE_SECONDS` | Compose 默认 `600` |
+| `EBO_SESSION_MAX_SECONDS` | `2700`，范围 30–3300，不小于 idle |
+| `REALTIME_IMAGE_WIDTH` / `REALTIME_IMAGE_QUALITY` | `768` / `75` |
+| `EBO_ASSISTANT_CONTROL_TOKEN` | 留空使用 `EBO_API_TOKEN`；浏览器不接触此值 |
 
-当前默认值继续保持此前为了成本采用的 `retention_ratio: 0.8` 和 `post_instructions: 8000`。
+图像仅在开场和说话开始时加入上下文；新图收到服务端确认再清旧图，不因图像主动请求回答。旧 `EBO_VISUAL_MODE`、运动 ROI 和图片响应参数退出运行路径。
 
-## 工具与 Tracing（高级）
+## 记忆
 
-| `.env` 变量 | 默认值 | 作用 |
-|---|---:|---|
-| `OPENAI_REALTIME_PARALLEL_TOOL_CALLS` | 空 | 空值采用服务器默认；也可设 `true` 或 `false`。 |
-| `OPENAI_REALTIME_TOOLS_JSON` | `[]` | 完整的一行 `session.tools` JSON 数组。 |
-| `OPENAI_REALTIME_TOOL_CHOICE` | 空 | `none`、`auto`、`required`，或强制指定工具的一行 JSON 对象。 |
-| `OPENAI_REALTIME_TRACING` | `off` | `off`、`auto`，或包含 `workflow_name`、`group_id`、`metadata` 的一行 JSON 对象。 |
+| 参数 | 默认值 / 含义 |
+|---|---|
+| `EBO_MEMORY_ROOT` | `/data/memory-v2`，绝对目录，每个身份独立子目录 |
+| `EBO_REALTIME_MEMORY_MAX_CHARS` | `6000` |
+| `EBO_MEMORY_MODEL` / `EBO_MEMORY_TIMEOUT_SECONDS` | `gpt-5.4-mini` / `45` |
+| `EBO_LONG_TERM_MEMORY_MODEL` / `EBO_LONG_TERM_MEMORY_TIMEOUT_SECONDS` | `gpt-6-sol` / `120` |
+| `EBO_MEMORY_CONSOLIDATION_HOURS` | `24` |
 
-这些字段会原样交给 OpenAI。当前程序没有本地 Function Tool 执行器：如果在 `TOOLS_JSON` 中声明
-本地 function，模型可以提出调用，但程序不会执行并回传结果。远端 MCP 还涉及授权和审批策略，配置前应
-单独做安全设计。Tracing 一旦在某个 Session 开启，该 Session 内不能再关闭；修改 `.env` 后的新 Session
-会使用新配置。
+保留 Specter 的总结、结构化记忆和过期策略，不导入它的记忆内容。旧 `REALTIME_HANDOFF_*`、`REALTIME_RECONNECT_MEMORY_*`、`EBO_MEMORY_LOG_*` 不再读取。
 
-## 有意固定的协议参数
+## EBO 传输与健康
 
-下面几个官方字段没有开放，因为它们不是纯“模型偏好”，而是当前音频管线的协议：
+`EBO_RTSP_URL=rtsp://ebo-engine:8554/ebo` 同时接 Frigate 视频和 Assistant 音频；`EBO_API_URL=http://ebo-engine:8098`、`EBO_NODE=ebo`、`EBO_API_TOKEN` 保留当前设备接口。`EBO_TALK_STREAM_URL=ws://ebo-engine:8200/talk`、`EBO_STREAM_PREBUFFER_MS=200`、`EBO_STREAM_CONNECT_TIMEOUT_SECONDS=10` 保留流式 PCM；`EBO_ASSISTANT_AUDIO_URL=http://realtime-assistant:8099/audio` 保留 WAV 回退。
 
-- Session `type` 固定为 `realtime`。
-- 输入和输出固定为 24 kHz、单声道 PCM；Assistant、WAV 持久化、8 kHz Agora 重采样都依赖它。
-- 输入转写保持启用。
-- `turn_detection` 保持启用。
+`EBO_AUTO_WAKE=true`，`EBO_MEDIA_STALE_AFTER_SECONDS=20`、`EBO_MEDIA_STARTUP_GRACE_SECONDS=90`。健康判断同时检查 Frigate、MQTT、RTSP 和 Engine 真正的麦克风来源；正常待机不要求 OpenAI 连接。
 
-把这些字段随意改成 PCMU、PCMA 或 `null` 会让收到的字节与现有解码、播放、回合创建逻辑不一致，
-因此没有为了“看起来参数更多”而暴露一个会静默破坏机器人的开关。
+持久化路径：`EBO_TRANSCRIPT_PATH=/data/transcripts.jsonl`（gate）、`EBO_LIVE_TRANSCRIPT_PATH=/data/live_transcripts.jsonl`（live）、`EBO_OUTPUT_AUDIO_DIR=/data/replies`、`EBO_ASSISTANT_TRANSCRIPT_PATH=/data/assistant_outputs.jsonl`。Compose 将 `/data` 映射到宿主机 `assistant-data`。不要把这些数据放进诊断代码快照。
