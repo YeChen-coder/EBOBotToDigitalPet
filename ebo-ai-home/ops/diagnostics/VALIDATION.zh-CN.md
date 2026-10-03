@@ -1,5 +1,7 @@
 # 第一版验收记录
 
+**历史验收记录。** 本文中的 AWS 结果对应旧版部署，不代表 2026-10-03 Frigate / `specter-ebo-v2` 已完成云端迁移。新版 Diagnostic Dashboard 的 AWS 端尚未完成；当前公开配置只管理本地。新版 269 项测试及待办见 [发布验证与 AWS 状态](../../docs/RELEASE-2026-10-03.md)。
+
 2026-09-09，多伦多时间。所有改动位于 `feature/diagnostic-agent`，集中在 `ops/diagnostics/`。
 
 | 检查 | 结果 |
