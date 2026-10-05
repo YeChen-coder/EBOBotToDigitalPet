@@ -1,3 +1,5 @@
+> **Branch: `frigate` — the Frigate edition, not main.** This architecture currently targets local operation; its new AWS Dashboard migration is unfinished. The complete local/cloud + Diagnostic Agent edition is [`main`](https://github.com/YeChen-coder/EBOBotToDigitalPet/tree/main). [Version guide](VERSION-GUIDE.md).
+
 [Chinese original](ShootToTheAWSCloud_zh.md)
 
 This is a record of the chain of problems and solution research triggered by two related efforts: building a diagnostic agent for the operations side of this project—yes, a project for the project, intended to keep the current system stable—and migrating the application to AWS.

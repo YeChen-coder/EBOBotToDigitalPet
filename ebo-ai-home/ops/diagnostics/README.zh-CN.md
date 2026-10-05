@@ -1,5 +1,7 @@
 # EBO 独立监控与诊断
 
+> **分支：`frigate`（Frigate 版，不是 main）。** 本分支的新架构当前针对本地，新版 AWS Dashboard 尚未完成迁移；完整的本地／云端＋Diagnostic Agent 版本在 [`main`](https://github.com/YeChen-coder/EBOBotToDigitalPet/tree/main)。[版本导航](../../../VERSION-GUIDE.md)。
+
 **2026-10-03 当前版本：本地 `specter-ebo-v2` 已更新；新版 Diagnostic Dashboard 的 AWS 端尚未迁移完成或验证。** 公开配置为 `runtimeEnvironment=local`、`runtimeControlScope=local`，只管理本地五个业务服务；云端启动请求被拒绝，本地启停不查询或启停 AWS。旧 AWS 适配器、文档和历史实测保留作迁移参考，不能证明新版云端可用。详见 [版本说明与 AWS 待办](../../docs/RELEASE-2026-10-03.md)。
 
 **日常入口：[运行与诊断 Dashboard](http://127.0.0.1:8179)**。当前使用「本地运行 / 全部停止」、AI 助手暂停/恢复和会话控制，查看实际状态、故障处理和诊断建议。「云端运行」在本地作用域被禁用。操作说明见 [统一页面与权限配置](HEALTH-REPORT.zh-CN.md)。

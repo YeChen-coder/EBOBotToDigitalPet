@@ -1,5 +1,7 @@
 # EBO 家庭助手：Specter 会话框架
 
+> **分支：`frigate`（Frigate 版，不是 main）。** 本分支的新架构当前针对本地，新版 AWS Dashboard 尚未完成迁移；完整的本地／云端＋Diagnostic Agent 版本在 [`main`](https://github.com/YeChen-coder/EBOBotToDigitalPet/tree/main)。[版本导航](../VERSION-GUIDE.md)。
+
 **2026-10-03 发布状态：本地 Frigate / 新会话框架与 Diagnostic Agent 已更新；新版 Diagnostic Dashboard 的 AWS 端尚未完成迁移与验证。** 公开示例使用 `runtimeControlScope=local`，云端运行被禁用。旧版完整保存在 [`archive/pre-frigate-2026-10-03`](https://github.com/YeChen-coder/EBOBotToDigitalPet/tree/archive/pre-frigate-2026-10-03)，见 [版本更新说明](docs/RELEASE-2026-10-03.md)。
 
 当前项目将 SpecterSaysHi 的身份触发、Frigate 图像、Realtime 会话、AEC/降噪、VAD 和个人记忆框架接到 EBO。主 Prompt 保留当前 `.env` 的 `EBO_ASSISTANT_INSTRUCTIONS`；模型语音通过原 EBO Engine PCM 接口返回机器人，保留 WAV 回退。

@@ -1,7 +1,8 @@
+> **分支：`frigate`（Frigate 版，不是 main）。** 本分支的新架构当前针对本地，新版 AWS Dashboard 尚未完成迁移；完整的本地／云端＋Diagnostic Agent 版本在 [`main`](https://github.com/YeChen-coder/EBOBotToDigitalPet/tree/main)。[版本导航](VERSION-GUIDE.md)。
 
 
-**2026-10-03 版本更新：** [本地 Frigate 与新版 Diagnostic Agent](ebo-ai-home/README.zh-CN.md) 已上传；**新版 Diagnostic Dashboard 的 AWS 端尚未迁移完成**。旧版完整保留在 [`archive/pre-frigate-2026-10-03`](https://github.com/YeChen-coder/EBOBotToDigitalPet/tree/archive/pre-frigate-2026-10-03)。[更新说明与 AWS 待办](ebo-ai-home/docs/RELEASE-2026-10-03.md)。
-技术向项目介绍和架构 在 https://github.com/YeChen-coder/EBOBotToDigitalPet/blob/main/ebo-ai-home/README.zh-CN.md 里，这篇文档更像是一个开发/吐槽/踩坑 日志。
+
+技术向项目介绍和架构 在 https://github.com/YeChen-coder/EBOBotToDigitalPet/blob/frigate/ebo-ai-home/README.zh-CN.md 里，这篇文档更像是一个开发/吐槽/踩坑 日志。
 
 这么做的原因，首先是现在大家 clone 一个 open source project 的时候，基本没人会自己去看 README 之类的东西了，更多是直接交给 coding agent 去看、去部署。
 
@@ -592,4 +593,4 @@ Active session time includes time when the user speaks, the assistant speaks, bo
 
 ---
 
-THE END ,  NEXT is https://github.com/YeChen-coder/EBOBotToDigitalPet/blob/main/ShootToTheAWSCloud_zh.md
+THE END ,  NEXT is https://github.com/YeChen-coder/EBOBotToDigitalPet/blob/frigate/ShootToTheAWSCloud_zh.md

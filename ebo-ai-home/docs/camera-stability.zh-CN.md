@@ -1,5 +1,7 @@
 # EBO 摄像头断流调查与稳定性修复
 
+> **分支：`frigate`（Frigate 版，不是 main）。** 本分支的新架构当前针对本地，新版 AWS Dashboard 尚未完成迁移；完整的本地／云端＋Diagnostic Agent 版本在 [`main`](https://github.com/YeChen-coder/EBOBotToDigitalPet/tree/main)。[版本导航](../../VERSION-GUIDE.md)。
+
 日期：2026-10-01，America/Toronto。代码和运行中的本地 Engine、assistant、Frigate、诊断 watcher / dashboard 已更新。
 
 ## 直接故障链

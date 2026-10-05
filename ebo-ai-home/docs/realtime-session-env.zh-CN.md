@@ -1,5 +1,7 @@
 # 当前 Realtime / Specter 框架 `.env` 参数
 
+> **分支：`frigate`（Frigate 版，不是 main）。** 本分支的新架构当前针对本地，新版 AWS Dashboard 尚未完成迁移；完整的本地／云端＋Diagnostic Agent 版本在 [`main`](https://github.com/YeChen-coder/EBOBotToDigitalPet/tree/main)。[版本导航](../../VERSION-GUIDE.md)。
+
 此表对应 `specter-ebo-v2`，图像使用 Frigate，音频使用待机唤起、转写回复门控与默认轮流说话。完整示例为项目根目录 `.env.example`。参数修改后需重建容器；Prompt/参数可用 `scripts/reload-ebo-assistant-prompt.ps1`，代码/依赖需 `docker compose --profile assistant up -d --build`。
 
 ## 模型与 Prompt

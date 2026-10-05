@@ -1,5 +1,7 @@
 # 历史说明
 
+> **分支：`frigate`（Frigate 版，不是 main）。** 本分支的新架构当前针对本地，新版 AWS Dashboard 尚未完成迁移；完整的本地／云端＋Diagnostic Agent 版本在 [`main`](https://github.com/YeChen-coder/EBOBotToDigitalPet/tree/main)。[版本导航](../../VERSION-GUIDE.md)。
+
 本文的 EBO Engine PCM 协议与 WAV 回退继续使用。本地插话代码已恢复，但针对近距离扬声器回声默认关闭；使用轮流说话及实际播放结束后 800 ms 输入屏蔽。下方插话路径仅适用于显式启用实验选项的情况。当前实现见 [Specter 迁移说明](specter-migration.zh-CN.md)。
 
 ---

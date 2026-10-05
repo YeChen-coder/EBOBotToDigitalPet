@@ -1,5 +1,7 @@
 # EBO 插话判断、回声处理与音频链路专项交接
 
+> **分支：`frigate`（Frigate 版，不是 main）。** 本分支的新架构当前针对本地，新版 AWS Dashboard 尚未完成迁移；完整的本地／云端＋Diagnostic Agent 版本在 [`main`](https://github.com/YeChen-coder/EBOBotToDigitalPet/tree/main)。[版本导航](../../VERSION-GUIDE.md)。
+
 > 更新时间：2026-09-02（America/Toronto）
 > 项目根目录：`<repository>`
 > 当前 Git HEAD：`7e5f8f7 feat: support echo-aware barge-in`

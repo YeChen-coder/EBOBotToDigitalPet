@@ -1,5 +1,7 @@
 # 公开副本与配置 / Public snapshot and configuration
 
+> **Branch: `frigate` — the Frigate edition, not main.** This architecture currently targets local operation; its new AWS Dashboard migration is unfinished. The complete local/cloud + Diagnostic Agent edition is [`main`](https://github.com/YeChen-coder/EBOBotToDigitalPet/tree/main). [Version guide](../VERSION-GUIDE.md).
+
 **2026-10-03 snapshot:** includes Frigate/MQTT, the v2 assistant, updated Diagnostic Agent source/tests and current implementation/Host Bridge design documents. The pre-update remote commit is preserved on [`archive/pre-frigate-2026-10-03`](https://github.com/YeChen-coder/EBOBotToDigitalPet/tree/archive/pre-frigate-2026-10-03). **AWS Dashboard migration is unfinished.** Frigate faces, media, models, and family memory remain private. Older architecture documents below describe their original release; see [current release notes](docs/RELEASE-2026-10-03.md).
 
 **当前公开副本**包含 Frigate/MQTT、新会话框架、新版诊断源码/测试和中英文 Diagnostic Agent 实现及 Host Bridge 设计文档。新版 Dashboard 的 AWS 端尚未完成；Frigate 人脸、媒体、模型缓存和家庭记忆未上传。旧架构文档按其原发布日期作为历史参考。

@@ -1,5 +1,7 @@
 # Real-time Assistant 机器人源音频中断事件报告
 
+> **分支：`frigate`（Frigate 版，不是 main）。** 本分支的新架构当前针对本地，新版 AWS Dashboard 尚未完成迁移；完整的本地／云端＋Diagnostic Agent 版本在 [`main`](https://github.com/YeChen-coder/EBOBotToDigitalPet/tree/main)。[版本导航](../../../VERSION-GUIDE.md)。
+
 ## 事件摘要
 
 - 日期：2026-09-16

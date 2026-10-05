@@ -1,5 +1,7 @@
 # EBO Bot: Frigate Sessions and Diagnostic Agent
 
+> **Branch: `frigate` — the Frigate edition, not main.** This architecture currently targets local operation; its new AWS Dashboard migration is unfinished. The complete local/cloud + Diagnostic Agent edition is [`main`](https://github.com/YeChen-coder/EBOBotToDigitalPet/tree/main). [Version guide](../VERSION-GUIDE.md).
+
 [中文说明](README.zh-CN.md)
 
 The current local version connects the Enabot EBO Engine to Frigate, Mosquitto, finite Realtime voice sessions, separate family memories, and an updated Diagnostic Agent.

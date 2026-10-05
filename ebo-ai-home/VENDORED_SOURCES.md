@@ -1,5 +1,7 @@
 # Vendored upstream sources
 
+> **Branch: `frigate` — the Frigate edition, not main.** This architecture currently targets local operation; its new AWS Dashboard migration is unfinished. The complete local/cloud + Diagnostic Agent edition is [`main`](https://github.com/YeChen-coder/EBOBotToDigitalPet/tree/main). [Version guide](../VERSION-GUIDE.md).
+
 This repository keeps the customized EBO and Home Assistant integrations in one
 Git history. Their former nested Git metadata was removed when the unified
 repository baseline was created.

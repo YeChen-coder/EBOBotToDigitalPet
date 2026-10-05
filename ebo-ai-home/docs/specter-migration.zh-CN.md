@@ -1,5 +1,7 @@
 # Specter 框架迁移到 EBO
 
+> **分支：`frigate`（Frigate 版，不是 main）。** 本分支的新架构当前针对本地，新版 AWS Dashboard 尚未完成迁移；完整的本地／云端＋Diagnostic Agent 版本在 [`main`](https://github.com/YeChen-coder/EBOBotToDigitalPet/tree/main)。[版本导航](../../VERSION-GUIDE.md)。
+
 2026-09-30：当前本地项目使用 `specter-ebo-v2`。参考项目为 `SpecterSaysHi`。只迁移源代码和框架，不导入参考项目的记忆、人脸照片、猫逻辑、数字人或视频输出。
 
 ## 数据流与保留内容

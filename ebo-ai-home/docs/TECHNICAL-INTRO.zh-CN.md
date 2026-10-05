@@ -1,5 +1,7 @@
 # EBO 家庭助手：新版技术介绍
 
+> **分支：`frigate`（Frigate 版，不是 main）。** 本分支的新架构当前针对本地，新版 AWS Dashboard 尚未完成迁移；完整的本地／云端＋Diagnostic Agent 版本在 [`main`](https://github.com/YeChen-coder/EBOBotToDigitalPet/tree/main)。[版本导航](../../VERSION-GUIDE.md)。
+
 2026-10-03 · Frigate / `specter-ebo-v2` · [English](TECHNICAL-INTRO.en.md)
 
 这个版本让 EBO 可以与家人语音交流，结合摄像头画面理解现场，并分别保存父母的会话记忆。另有独立的 Diagnostic Agent，负责检查服务、有限恢复和故障说明。

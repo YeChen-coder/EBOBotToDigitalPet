@@ -1,5 +1,7 @@
 # EBO Home Assistant: Current Technical Overview
 
+> **Branch: `frigate` — the Frigate edition, not main.** This architecture currently targets local operation; its new AWS Dashboard migration is unfinished. The complete local/cloud + Diagnostic Agent edition is [`main`](https://github.com/YeChen-coder/EBOBotToDigitalPet/tree/main). [Version guide](../../VERSION-GUIDE.md).
+
 2026-10-03 · Frigate / `specter-ebo-v2` · [中文](TECHNICAL-INTRO.zh-CN.md)
 
 This version lets EBO talk with family members, use camera images for context, and keep separate memories for each parent. An independent Diagnostic Agent checks services, attempts limited recovery, and explains faults.

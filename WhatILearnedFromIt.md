@@ -1,5 +1,7 @@
 # EBOAWSCloud Related
 
+> **分支：`frigate`（Frigate 版，不是 main）。** 本分支的新架构当前针对本地，新版 AWS Dashboard 尚未完成迁移；完整的本地／云端＋Diagnostic Agent 版本在 [`main`](https://github.com/YeChen-coder/EBOBotToDigitalPet/tree/main)。[版本导航](VERSION-GUIDE.md)。
+
 稍微吐槽一下。
 
 我现在发现，其实 EBO Bot 去实现这个功能本身，要渡的劫已经在 local 的里理完了。即真正运行的这个程序，它的逻辑，怎么实现交互等等我已经理得差不多了。

@@ -1,6 +1,7 @@
 # Turning an EBO Bot into an AI Companion — Development Journal
 
-**2026-10-03 release:** [current local Frigate / Diagnostic Agent implementation](ebo-ai-home/README.md); **the AWS side of the new Diagnostic Dashboard is unfinished**. The complete previous version is preserved on [`archive/pre-frigate-2026-10-03`](https://github.com/YeChen-coder/EBOBotToDigitalPet/tree/archive/pre-frigate-2026-10-03). [Release notes](ebo-ai-home/docs/RELEASE-2026-10-03.md).
+> **Branch: `frigate` — the Frigate edition, not main.** This architecture currently targets local operation; its new AWS Dashboard migration is unfinished. The complete local/cloud + Diagnostic Agent edition is [`main`](https://github.com/YeChen-coder/EBOBotToDigitalPet/tree/main). [Version guide](VERSION-GUIDE.md).
+
 
 [Chinese version](README_zh.md)
 

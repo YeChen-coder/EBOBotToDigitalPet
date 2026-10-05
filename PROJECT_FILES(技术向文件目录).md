@@ -1,5 +1,7 @@
 # 项目代码与中英文文档 / Project and bilingual documents
 
+**本目录对应 `frigate` 分支（Frigate 版，不是 main）。** 完整本地／云端＋Diagnostic Agent 版见 [`main`](https://github.com/YeChen-coder/EBOBotToDigitalPet/tree/main)。[版本导航 / Version guide](VERSION-GUIDE.md)。
+
 完整项目位于 [`ebo-ai-home/`](ebo-ai-home/)，包含语音助手、EBO Engine、Frigate/MQTT、Home Assistant、Diagnostic Agent、测试和部署脚本。根目录的 `README.md`、`README_zh.md` 是开发日记。
 
 The project lives in [`ebo-ai-home/`](ebo-ai-home/): the voice assistant, EBO Engine, Frigate/MQTT, Home Assistant, Diagnostic Agent, tests, and deployment scripts. Root `README.md` and `README_zh.md` are development journals.

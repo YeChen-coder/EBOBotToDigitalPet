@@ -1,5 +1,7 @@
 # Assistant 优先使用音频，图像可降级和恢复
 
+> **分支：`frigate`（Frigate 版，不是 main）。** 本分支的新架构当前针对本地，新版 AWS Dashboard 尚未完成迁移；完整的本地／云端＋Diagnostic Agent 版本在 [`main`](https://github.com/YeChen-coder/EBOBotToDigitalPet/tree/main)。[版本导航](../../VERSION-GUIDE.md)。
+
 日期：2026-10-01，America/Toronto。
 
 ## 行为

@@ -1,5 +1,7 @@
 # Dashboard 的 AI 助手开关
 
+> **分支：`frigate`（Frigate 版，不是 main）。** 本分支的新架构当前针对本地，新版 AWS Dashboard 尚未完成迁移；完整的本地／云端＋Diagnostic Agent 版本在 [`main`](https://github.com/YeChen-coder/EBOBotToDigitalPet/tree/main)。[版本导航](../../VERSION-GUIDE.md)。
+
 在本地 Dashboard 的“AI 助手开关”区域使用两个按钮：
 
 - **暂停 AI 助手**：结束正在连接、对话或保存记忆的 AI 会话，停止 AI 发声，暂停语音唤醒和人脸主动招呼。适合与家人通话时使用。

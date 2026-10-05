@@ -1,5 +1,7 @@
 # 历史说明
 
+> **分支：`frigate`（Frigate 版，不是 main）。** 本分支的新架构当前针对本地，新版 AWS Dashboard 尚未完成迁移；完整的本地／云端＋Diagnostic Agent 版本在 [`main`](https://github.com/YeChen-coder/EBOBotToDigitalPet/tree/main)。[版本导航](../../VERSION-GUIDE.md)。
+
 此日志属于迁移前的轮换/断线交接机制。2026-09-30 起新会话不再读取或写入此动态交接记忆，现有文件仅作历史保留。当前父母各自记忆见 [Specter 迁移说明](specter-migration.zh-CN.md)。
 
 ---
