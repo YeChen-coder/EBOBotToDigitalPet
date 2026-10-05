@@ -4,7 +4,7 @@ input_select:
   ai_audio_output:
     name: AI audio output
     options:
-      - media_player.ebo_speaker
+      - media_player.fu_mu_jia_de_ebo_speaker
     icon: mdi:speaker-wireless
 
 input_text:

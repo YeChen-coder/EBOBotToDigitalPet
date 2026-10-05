@@ -2,14 +2,14 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 
-export const conversationFilter = '{ ($.event = "conversation.user.transcript" || $.event = "conversation.user.live_transcript" || $.event = "conversation.assistant.output") && $.transcript != "" }';
+export const conversationFilter = '{ ($.event = "conversation.user.transcript" || $.event = "conversation.assistant.output") && $.transcript != "" }';
 const hash = value => createHash('sha256').update(value).digest('hex');
 const DAY = 86400000;
 const defaults = { localSeconds: 30, cloudSeconds: 300, idleCloudSeconds: 1800, bootstrapDays: 7,
   retentionDays: 30, overlapSeconds: 600, maxPagesPerPoll: 2, dailyRequestLimit: 600, maxMessages: 20000 };
 
 export function normalizeConversation(row, { role, scope, eventId, eventTime } = {}) {
-  if (!role) role = ['conversation.user.transcript','conversation.user.live_transcript'].includes(row.event) ? 'user' : row.event === 'conversation.assistant.output' ? 'assistant' : null;
+  if (!role) role = row.event === 'conversation.user.transcript' ? 'user' : row.event === 'conversation.assistant.output' ? 'assistant' : null;
   if (!role || typeof row.transcript !== 'string') return null;
   const at = Number.isFinite(row.received_at) ? row.received_at * 1000 : Date.parse(row.timestamp) || eventTime;
   if (!Number.isFinite(at) || at <= 0) return null;
@@ -17,12 +17,10 @@ export function normalizeConversation(row, { role, scope, eventId, eventTime } =
   if (!chunked && !row.transcript.trim()) return null;
   const message = chunked ? row.transcript : row.transcript.trim();
   const session = String(row.session_started_at || 'unknown');
-  const source = role === 'user' ? (row.source === 'live' || row.event === 'conversation.user.live_transcript' ? 'live' : row.source === 'realtime' ? 'realtime' : 'gate') : undefined;
   const item = role === 'user' ? row.item_id : row.response_id || row.output_id || row.item_id;
   // IDs deduplicate repeated CloudWatch pages and file rewrites, never repeated spoken words.
-  const key = item ? `${role}:${source || ''}:${session}:${item}` : `${scope}:${role}:${source || ''}:${row.event_id || eventId || hash(at + ':' + message)}`;
-  return { id: hash(key), at, message, role, scope, session, ...(source ? {source} : {}),
-    ...(['father','mother'].includes(row.user_id) ? {user_id:row.user_id} : {}),
+  const key = item ? `${role}:${session}:${item}` : `${scope}:${role}:${row.event_id || eventId || hash(at + ':' + message)}`;
+  return { id: hash(key), at, message, role, scope, session,
     ...(chunked ? { chunk: { key:hash(`${scope}:${row.event_id || key + ':' + at}`),index:row.chunk_index,count:row.chunk_count } } : {}) };
 }
 
@@ -31,10 +29,7 @@ export function groupConversations(messages) {
   for (const m of [...messages].sort((a,b) => a.at-b.at || (a.role === b.role ? a.id.localeCompare(b.id) : a.role === 'user' ? -1 : 1))) {
     const scope = m.scope + ':' + m.session; let group = last.get(scope);
     // Legacy logs have no response-to-input ID. Group nearby messages, not inferred causality.
-    const pairedTranscript = m.role === 'user' && group && group.messages.length === 1 &&
-      group.messages[0].role === 'user' && group.messages[0].source !== m.source &&
-      m.at - group.messages[0].at <= 15000;
-    if ((m.role === 'user' && !pairedTranscript) || !group || m.at - group.messages.at(-1).at > 120000 || group.messages[0].role !== 'user') {
+    if (m.role === 'user' || !group || m.at - group.messages.at(-1).at > 120000 || group.messages[0].role !== 'user') {
       group = { id: m.id, at: m.at, messages: [] }; groups.push(group); last.set(scope, group);
     }
     group.messages.push(m); group.at = Math.max(group.at, m.at);
@@ -42,10 +37,10 @@ export function groupConversations(messages) {
   return groups.sort((a,b) => b.at-a.at || a.id.localeCompare(b.id));
 }
 
-// Only reads approved text files; WAVs and reply directories are never read.
+// Only reads the two approved text files; WAVs and reply directories are never read.
 export async function readLocalConversations(directory, fingerprints = {}) {
   const result = { messages: [], fingerprints: { ...fingerprints }, missing: [], invalid: 0, limited: false };
-  for (const [filename,role,source] of [['transcripts.jsonl','user','gate'],['live_transcripts.jsonl','user','live'],['assistant_outputs.jsonl','assistant',null]]) {
+  for (const [filename,role] of [['transcripts.jsonl','user'],['assistant_outputs.jsonl','assistant']]) {
     let handle;
     try {
       const file = path.join(directory, filename); const stat = await fs.stat(file);
@@ -61,10 +56,10 @@ export async function readLocalConversations(directory, fingerprints = {}) {
       if (!complete) lines.pop(); else result.fingerprints[filename] = version;
       for (const line of lines) {
         if (!line.trim()) continue;
-        try { const record = JSON.parse(line.replace(/^\uFEFF/, '')); const m = normalizeConversation({ ...record, source: record.source === 'realtime' ? 'realtime' : source }, { role, scope: 'local' }); if (m) result.messages.push(m); }
+        try { const m = normalizeConversation(JSON.parse(line.replace(/^\uFEFF/, '')), { role, scope: 'local' }); if (m) result.messages.push(m); }
         catch { result.invalid++; }
       }
-    } catch (e) { if (e.code === 'ENOENT') { if (filename !== 'live_transcripts.jsonl') result.missing.push(filename); } else throw new Error('local_transcripts_unreadable'); }
+    } catch (e) { if (e.code === 'ENOENT') result.missing.push(filename); else throw new Error('local_transcripts_unreadable'); }
     finally { await handle?.close(); }
   }
   return result;
@@ -175,7 +170,7 @@ export class ConversationLog {
     this.groups ??= groupConversations(s.messages);
     const count = Math.min(500,Math.max(1,Number.isInteger(limit) ? limit : 50));
     // Raw event IDs, paths, Task IDs, audio and operational metadata never enter message payloads.
-    return { revision: this.version, groups: this.groups.slice(0,count).map(g => ({ id:g.id, messages:g.messages.map(m => ({ timestamp:new Date(m.at).toISOString(),role:m.role,message:m.message,...(m.source ? {source:m.source} : {}),...(m.user_id ? {user_id:m.user_id} : {}) })) })),
+    return { revision: this.version, groups: this.groups.slice(0,count).map(g => ({ id:g.id, messages:g.messages.map(m => ({ timestamp:new Date(m.at).toISOString(),role:m.role,message:m.message })) })),
       hasMore: this.groups.length > count, localCheckedAt:s.local.checkedAt || null,
       cloudCheckedAt:this.sources.length ? Math.min(...this.sources.map(x => s.cloud[x.id]?.checkedAt || 0)) || null : null,
       cloudCatchingUp:this.sources.some(x => {const v=s.cloud[x.id];return !!v?.window || !!v?.historyWindow || v?.historyBefore>v?.historyFrom;}), localError:s.local.error || null,

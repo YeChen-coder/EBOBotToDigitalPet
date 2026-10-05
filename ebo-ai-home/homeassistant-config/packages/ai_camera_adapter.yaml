@@ -4,7 +4,7 @@ input_select:
   ai_camera_source:
     name: AI camera source
     options:
-      - camera.ebo
+      - camera.fu_mu_jia_de_ebo
     icon: mdi:camera-switch
 
 input_text:
@@ -12,7 +12,7 @@ input_text:
   # Keeping that ID in one helper avoids baking OpenAI into every automation.
   ai_vision_provider:
     name: AI vision provider
-    initial: ""  # Set your own LLM Vision provider config-entry ID after setup.
+    initial: 01M10J7DJW7ZJC763DS2ACPA1Y
     max: 64
 
   ai_playmate_prompt:
@@ -38,7 +38,7 @@ script:
     sequence:
       - action: button.press
         target:
-          entity_id: button.ebo_wake
+          entity_id: button.fu_mu_jia_de_ebo_wake
       - delay: "00:00:08"
 
   ai_camera_describe:

@@ -22,8 +22,7 @@ if (!fs.existsSync('config.local.json')) fs.copyFileSync('config.example.json', 
 fs.mkdirSync('local/source', { recursive: true });
 // Explicit tracked-source allowlist: no .env, household data, recordings, HA configuration or .git.
 const files = execFileSync('git', ['-c', `safe.directory=${repo.replaceAll('\\', '/')}`, '-C', repo, 'ls-files', '-z'], { encoding: 'utf8', maxBuffer: 4 * 1024 * 1024 }).split('\0');
-const framework = ['app.py','runtime.py','config.py','state.py','conversation.py','ebo_transport.py','prompt.py','research.py','session_memory.py','session_control.py','presence.py','visual.py','echo.py','register_faces.py','speech_gate.py','live_transcription.py','realtime_model.py','standby_voice.py'].map(f => 'realtime-assistant/' + f).filter(f => fs.existsSync(path.join(repo,f)));
-const allowed = [...new Set([...files.filter(f => /^(realtime-assistant\/|ha-enabot\/ebo\/)/.test(f) && /\.(py|sh|js|html)$/.test(f) && !/(^|\/)(tests?|private|vendor|node_modules)\//.test(f)), ...framework, 'frigate/config.yml'])];
+const allowed = files.filter(f => /^(realtime-assistant\/|ha-enabot\/ebo\/)/.test(f) && /\.(py|sh|js|html)$/.test(f) && !/(^|\/)(tests?|private|vendor|node_modules)\//.test(f));
 const staging = path.join(root, 'local/source');
 // Refresh removes only obsolete files within this verified dedicated snapshot directory.
 function prune(dir) {

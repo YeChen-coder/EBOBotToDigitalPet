@@ -1,7 +1,5 @@
 {
-  "requiredArchitecture": "specter-ebo-v2",
   "runtimeEnvironment": "local",
-  "runtimeControlScope": "local",
   "observationOnly": true,
   "maintenance": false,
   "autoRecovery": true,
@@ -15,37 +13,8 @@
   "diagnosisSeconds": 300,
   "notifySeconds": 300,
   "targets": [
-    {
-      "id": "engine",
-      "container": "ebo-ai-home-ebo-engine",
-      "probe": "container",
-      "restartOnStall": false
-    },
-    {
-      "id": "mosquitto",
-      "container": "ebo-ai-home-mosquitto",
-      "probe": "container",
-      "restartOnStall": false
-    },
-    {
-      "id": "frigate",
-      "container": "ebo-ai-home-frigate",
-      "probe": "container",
-      "restartOnStall": false
-    },
-    {
-      "id": "assistant",
-      "container": "ebo-ai-home-realtime-assistant",
-      "probe": "ebo-health",
-      "url": "http://host.docker.internal:8099/health",
-      "restartOnStall": true
-    },
-    {
-      "id": "homeassistant",
-      "container": "ebo-ai-home-homeassistant",
-      "probe": "http",
-      "url": "http://host.docker.internal:8123",
-      "restartOnStall": false
-    }
+    { "id": "engine", "container": "ebo-ai-home-ebo-engine", "probe": "container", "restartOnStall": false },
+    { "id": "assistant", "container": "ebo-ai-home-realtime-assistant", "probe": "ebo-health", "url": "http://host.docker.internal:8099/health", "restartOnStall": true },
+    { "id": "homeassistant", "container": "ebo-ai-home-homeassistant", "probe": "http", "url": "http://host.docker.internal:8123", "restartOnStall": false }
   ]
 }

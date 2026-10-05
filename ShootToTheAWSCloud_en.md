@@ -1,3 +1,5 @@
+> **Branch: `main` — the complete local/cloud + Diagnostic Agent edition.** The separate [Frigate edition](https://github.com/YeChen-coder/EBOBotToDigitalPet/tree/frigate) is not main; its unfinished AWS migration does not apply to this edition's existing AWS integration. [Version guide](VERSION-GUIDE.md).
+
 [Chinese original](ShootToTheAWSCloud_zh.md)
 
 This is a record of the chain of problems and solution research triggered by two related efforts: building a diagnostic agent for the operations side of this project—yes, a project for the project, intended to keep the current system stable—and migrating the application to AWS.

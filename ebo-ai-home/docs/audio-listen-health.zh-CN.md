@@ -1,5 +1,7 @@
 # 播放器静音、全局麦克风与音频健康
 
+> **分支：`main`（完整本地／云端＋Diagnostic Agent 版）。** Frigate 版单独保留在 [`frigate`](https://github.com/YeChen-coder/EBOBotToDigitalPet/tree/frigate)，不是 main；其新版 AWS 待办不影响本分支已实现的 AWS 接入。[版本导航](../../VERSION-GUIDE.md)。
+
 ## 日常怎么用
 
 - 播放器扬声器按钮只控制当前浏览器播放，静音不影响 Assistant 和其他观看者。

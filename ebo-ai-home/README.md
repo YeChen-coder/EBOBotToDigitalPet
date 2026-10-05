@@ -1,54 +1,55 @@
-# EBO Bot: Frigate Sessions and Diagnostic Agent
+# EBO Bot Local and Diagnostic Agent
 
-[中文说明](README.zh-CN.md)
+> **Branch: `main` — the complete local/cloud + Diagnostic Agent edition.** The separate [Frigate edition](https://github.com/YeChen-coder/EBOBotToDigitalPet/tree/frigate) is not main; its unfinished AWS migration does not apply to this edition's existing AWS integration. [Version guide](../VERSION-GUIDE.md).
 
-The current local version connects the Enabot EBO Engine to Frigate, Mosquitto, finite Realtime voice sessions, separate family memories, and an updated Diagnostic Agent.
+This repository runs an Enabot EBO assistant either on a local Docker host or on AWS Fargate, with one bilingual dashboard for runtime control, diagnostics, and conversation transcripts.
 
-**Release status (2026-10-03): the local implementation is published. The AWS side of the Diagnostic Dashboard has NOT been migrated to this architecture or validated.** Existing ECS/Fargate adapters, CloudWatch readers, and AWS documents remain as legacy references. They do not establish support for this release on AWS. The example configuration uses `runtimeControlScope: "local"`; cloud startup is disabled and local start/stop does not control AWS.
+## What it includes
 
-The complete previous GitHub version is preserved on [`archive/pre-frigate-2026-10-03`](https://github.com/YeChen-coder/EBOBotToDigitalPet/tree/archive/pre-frigate-2026-10-03). See [release and migration notes](docs/RELEASE-2026-10-03.md) for the architecture changes and remaining AWS work.
-
-## Current architecture
-
-```text
-EBO -> Engine RTSP -> Frigate frames / face recognition -> MQTT identity hints
-   -> Engine audio listener -> complete-utterance wake validation -> Realtime session
-   <- Engine PCM talkback <- Realtime output (WAV fallback)
-                            -> per-user session summaries and long-term memory
-
-Diagnostic Dashboard -> local controls / assistant pause / session controls
-                    -> Watcher -> bounded recovery -> triage -> advanced diagnosis
-```
-
-Voice wakes the assistant after transcription validates a complete utterance; face recognition supplies identity hints. Unconfirmed identity uses a temporary guest session without access to parental memories. Frigate images provide the latest frame during a conversation. Automatic Realtime responses and interruptions are disabled; the primary final transcript gates responses, while an independent live transcription channel records speech. The default takes turns speaking and excludes microphone input during playback and its tail guard. Local interruption remains experimental.
-
-The Diagnostic Agent now understands `specter-ebo-v2`, the five local services, standby without a Realtime connection, audio listener health, Frigate/MQTT conditions, and assistant pause/session controls. It checks real recovery independently of model conclusions. See [audio-first behavior](docs/assistant-audio-first.zh-CN.md), [pause controls](docs/assistant-pause.zh-CN.md), and the [migration details](docs/specter-migration.zh-CN.md).
-
-## Local setup
-
-Requirements: Windows, Docker Desktop, PowerShell, and Node.js 22 or newer for diagnostics tooling.
-
-Run these commands from `ebo-ai-home`, rather than the repository root:
-
-```powershell
-Copy-Item .env.example .env
-# Supply your own account, device keys, API key, region and host address in .env.
-.\scripts\prepare-ebo.ps1
-.\scripts\start-ebo-home.ps1 -RebuildAllServices
-Invoke-RestMethod http://127.0.0.1:8099/health
-```
-
-The start script builds the business and diagnostic images, refreshes the diagnostic source snapshot, recreates services, restores the host tasks, and checks health. The first diagnostic setup creates local configuration and internal tokens in observation mode. Review the [diagnostic setup guide](ops/diagnostics/README.zh-CN.md) before enabling recovery and model diagnosis.
-
-- [Diagnostic Dashboard](http://127.0.0.1:8179): local runtime status, pause/resume, family sessions, diagnostics, and transcripts.
-- [Home Assistant](http://127.0.0.1:8123): device controls and cameras.
-- [Frigate](https://127.0.0.1:8973): this project's separate face library and login.
-
-Stop with `.\scripts\stop-ebo-home.ps1`; configuration and persistent data are retained. Configure parent face enrollment using `.\scripts\register-parent-faces.ps1`; see [Chinese instructions](README.zh-CN.md) for usage and deployment details.
+- Local EBO Engine, Home Assistant, and Realtime Assistant services.
+- A three-state runtime controller: **Run in cloud**, **Run locally**, or **Stop everywhere**.
+- Safe switching that stops and verifies one environment before starting the other.
+- A Diagnostic Agent with deterministic health checks and bounded recovery before model diagnosis.
+- Two diagnostic tiers: `gpt-5.6-luna / low` for triage and `gpt-5.6-sol / high` for advanced diagnosis.
+- A bilingual English/Chinese dashboard at `http://127.0.0.1:8179`.
+- A combined local and CloudWatch transcript timeline with cached, budget-aware cloud polling.
 
 ## Privacy and credentials
 
-The public snapshot excludes real `.env` files, account/device secrets, AWS credentials, Engine options, Home Assistant instance data, Frigate faces/media/models, family memories, transcripts, recordings, generated audio, diagnostic state, and `private/`. Supply these locally; do not commit runtime data. See [public snapshot notes](PUBLIC_SNAPSHOT.md).
+Runtime secrets and household data are intentionally excluded from Git. This includes `.env`, Home Assistant storage and databases, EBO data, conversation transcripts, generated audio, diagnostic state, AWS credentials, and files under `private/`.
+
+Copy the example configuration files and add credentials only on the machine that runs the services:
+
+```powershell
+Copy-Item .env.example .env
+Copy-Item ops/diagnostics/.env.example ops/diagnostics/.env
+```
+
+Review both `.gitignore` files before adding new runtime outputs.
+
+## Local services
+
+Requirements:
+
+- Windows with Docker Desktop
+- PowerShell
+- Node.js 22 or newer for the Diagnostic Agent tooling
+
+Configure `.env`, then start the local assistant stack:
+
+```powershell
+docker compose --profile assistant up -d --build
+```
+
+Install and start the Diagnostic Agent from `ops/diagnostics`:
+
+```powershell
+node scripts/setup.mjs
+docker compose build
+powershell.exe -NoProfile -File scripts/install-host-task.ps1
+```
+
+See [`ops/diagnostics/README.zh-CN.md`](ops/diagnostics/README.zh-CN.md), [`ops/diagnostics/USAGE.zh-CN.md`](ops/diagnostics/USAGE.zh-CN.md), and [`ops/diagnostics/AWS.zh-CN.md`](ops/diagnostics/AWS.zh-CN.md) for configuration and operating details.
 
 ## Tests
 
@@ -58,8 +59,10 @@ $tests = Get-ChildItem -LiteralPath test -Filter '*.test.mjs' | Select-Object -E
 node --test $tests
 ```
 
-Assistant unit tests are in `realtime-assistant/tests`; Engine tests are in `ha-enabot/ebo/tests`. Run them with their Python dependencies in an isolated environment. Real API/robot smoke scripts are separate from unit tests. Synthetic AWS adapter tests do not validate the new AWS deployment.
+## Vendored projects
 
-## Licenses
+The `ha-enabot` and `ha-llmvision` directories preserve their upstream licenses. See [`VENDORED_SOURCES.md`](VENDORED_SOURCES.md) for source revisions.
 
-Original project code uses the MIT License. Vendored components retain their upstream licenses; see [VENDORED_SOURCES.md](VENDORED_SOURCES.md).
+## License
+
+Original code in this repository is available under the MIT License. Vendored components remain under the licenses included in their directories.

@@ -1,10 +1,6 @@
-# 历史说明
-
-本文描述迁移前的 EBO 框架。2026-09-30 起运行逻辑已替换，当前行为和配置见 [Specter 迁移说明](specter-migration.zh-CN.md)。本文中的运动门控、长期会话和交接参数不再适用。
-
----
-
 # EBO Realtime 助手：技术选择与落地计划
+
+> **分支：`main`（完整本地／云端＋Diagnostic Agent 版）。** Frigate 版单独保留在 [`frigate`](https://github.com/YeChen-coder/EBOBotToDigitalPet/tree/frigate)，不是 main；其新版 AWS 待办不影响本分支已实现的 AWS 接入。[版本导航](../../VERSION-GUIDE.md)。
 
 ## 结论
 

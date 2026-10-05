@@ -1,6 +1,5 @@
-﻿param(
-    [string]$ProjectRoot = (Split-Path -Parent $PSScriptRoot),
-    [switch]$PreserveExistingOptions
+param(
+    [string]$ProjectRoot = (Split-Path -Parent $PSScriptRoot)
 )
 
 $envPath = Join-Path $ProjectRoot '.env'
@@ -15,12 +14,7 @@ $values = @{}
 foreach ($line in Get-Content -LiteralPath $envPath) {
     if ($line -match '^\s*#' -or $line -notmatch '=') { continue }
     $name, $value = $line -split '=', 2
-    $value = $value.Trim()
-    if ($value.Length -ge 2 -and (($value.StartsWith('"') -and $value.EndsWith('"')) -or
-        ($value.StartsWith("'") -and $value.EndsWith("'")))) {
-        $value = $value.Substring(1, $value.Length - 2)
-    }
-    $values[$name.Trim()] = $value
+    $values[$name.Trim()] = $value.Trim()
 }
 
 $required = 'EBO_EMAIL', 'EBO_PASSWORD', 'EBO_PAYLOAD_KEY', 'EBO_SIGN_KEY', 'EBO_API_TOKEN'
@@ -52,20 +46,6 @@ $options = [ordered]@{
     standby_after_minutes = 5
     mcp = $false
     log_level = 'info'
-}
-
-if ($PreserveExistingOptions -and (Test-Path -LiteralPath $optionsPath)) {
-    $existingOptions = Get-Content -LiteralPath $optionsPath -Raw | ConvertFrom-Json
-    foreach ($property in $existingOptions.PSObject.Properties) { $options[$property.Name] = $property.Value }
-    # .env owns account/connectivity values; retain manually tuned audio/video options.
-    $environmentOptions = @{
-        email='EBO_EMAIL'; password='EBO_PASSWORD'; payload_key='EBO_PAYLOAD_KEY';
-        sign_key='EBO_SIGN_KEY'; api_token='EBO_API_TOKEN'; host_ip='EBO_HOST_IP';
-        region='EBO_REGION'; host='EBO_CLOUD_HOST'
-    }
-    foreach ($key in $environmentOptions.Keys) {
-        if ($values[$environmentOptions[$key]]) { $options[$key] = $values[$environmentOptions[$key]] }
-    }
 }
 
 # Use UTF-8 without a BOM so jq in the Linux container can read it reliably.

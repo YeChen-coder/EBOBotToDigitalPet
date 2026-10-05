@@ -1,12 +1,12 @@
 # EBO 独立监控与诊断
 
-**2026-10-03 当前版本：本地 `specter-ebo-v2` 已更新；新版 Diagnostic Dashboard 的 AWS 端尚未迁移完成或验证。** 公开配置为 `runtimeEnvironment=local`、`runtimeControlScope=local`，只管理本地五个业务服务；云端启动请求被拒绝，本地启停不查询或启停 AWS。旧 AWS 适配器、文档和历史实测保留作迁移参考，不能证明新版云端可用。详见 [版本说明与 AWS 待办](../../docs/RELEASE-2026-10-03.md)。
+> **分支：`main`（完整本地／云端＋Diagnostic Agent 版）。** Frigate 版单独保留在 [`frigate`](https://github.com/YeChen-coder/EBOBotToDigitalPet/tree/frigate)，不是 main；其新版 AWS 待办不影响本分支已实现的 AWS 接入。[版本导航](../../../VERSION-GUIDE.md)。
 
-**日常入口：[运行与诊断 Dashboard](http://127.0.0.1:8179)**。当前使用「本地运行 / 全部停止」、AI 助手暂停/恢复和会话控制，查看实际状态、故障处理和诊断建议。「云端运行」在本地作用域被禁用。操作说明见 [统一页面与权限配置](HEALTH-REPORT.zh-CN.md)。
+**日常入口：[运行与诊断 Dashboard](http://127.0.0.1:8179)**。同一页面选择「云端运行 / 本地运行 / 全部停止」，查看实际状态、切换进度、故障处理和诊断建议。操作说明见 [统一页面与权限配置](HEALTH-REPORT.zh-CN.md)。
 
 固定恢复优先：异常持续确认 → 适用的有限恢复 → 功能复检。恢复成功零模型调用；没有适用恢复流程、恢复失败或短期反复故障时才进入诊断。
 
-旧版 AWS ECS/Fargate 适配器已保留，但本次新架构的云端 Dashboard 尚未迁移；历史配置、身份与恢复规则见 [AWS 接入说明](AWS.zh-CN.md)，不作为当前部署步骤。顶层 `runtimeEnvironment` 必须为 `local` 或 `aws`，互斥选择业务环境；两边复用诊断流程并保留各自历史。频率、开销和切换方法见 [采样说明](SAMPLING.zh-CN.md)。
+AWS ECS/Fargate 接入已实现，配置、身份与恢复规则见 [AWS 接入说明](AWS.zh-CN.md)。顶层 `runtimeEnvironment` 必须为 `local` 或 `aws`，互斥选择业务环境；两边复用诊断流程并保留各自历史。频率、开销和切换方法见 [采样说明](SAMPLING.zh-CN.md)。
 
 日常启动、状态查看、模型切换、暂停和报告阅读见 [操作手册](USAGE.zh-CN.md)。
 
@@ -63,8 +63,6 @@ powershell.exe -NoProfile -File scripts/set-mode.ps1 -Mode maintenance
 
 - Engine：检查进程存活；其真实源音频由 Assistant 的健康接口提供。尚不宣称完整验证 Engine 控制/视频全部功能。
 - Assistant：检查 Realtime、视频、RTSP 音频与上游收包/解码状态。仅确认媒体卡住/连接异常且未主动关麦时，允许重启 Assistant 一次。
-- Frigate / Mosquitto：纳入独立容器探测；Assistant 的 v2 健康合同按音频优先设置判断视觉/MQTT 故障，避免无依据重启语音助手。
-- 待机 `realtime_connected=false`、未录入父母照片、主动暂停属于预期状态；真实源音频停流或监听器故障仍被识别。
 - HA：检查 HTTP 可达性；未启用登录后的 HA 功能探针。
 - 主动关麦、配置停用不触发语音恢复，也不会开麦；视频或 Realtime 的独立故障仍可诊断。
 - 接口失联无法确认隐私状态时不盲目重启，升级诊断。

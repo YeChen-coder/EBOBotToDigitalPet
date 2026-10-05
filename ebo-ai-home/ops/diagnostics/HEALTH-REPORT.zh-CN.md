@@ -1,22 +1,16 @@
 # EBO 统一运行与诊断页面
 
-**2026-10-03 当前版本：本地 `specter-ebo-v2` 已更新；新版 Diagnostic Dashboard 的 AWS 端尚未迁移完成或验证。** 公开配置为 `runtimeEnvironment=local`、`runtimeControlScope=local`，只管理本地五个业务服务；云端启动请求被拒绝，本地启停不查询或启停 AWS。旧 AWS 适配器、文档和历史实测保留作迁移参考，不能证明新版云端可用。详见 [版本说明与 AWS 待办](../../docs/RELEASE-2026-10-03.md)。
+> **分支：`main`（完整本地／云端＋Diagnostic Agent 版）。** Frigate 版单独保留在 [`frigate`](https://github.com/YeChen-coder/EBOBotToDigitalPet/tree/frigate)，不是 main；其新版 AWS 待办不影响本分支已实现的 AWS 接入。[版本导航](../../../VERSION-GUIDE.md)。
 
 日常只使用一个入口：**http://127.0.0.1:8179**。也可运行 `powershell.exe -NoProfile -File scripts/diagnostics.ps1 dashboard`。
 
-页面中的「API 与基础设施花销」并列显示 OpenAI 组织和 AWS 账号的本月至今费用。两者均由宿主机后台采集并缓存；浏览器不接触供应商凭据，也不会因刷新页面增加查询次数。未配置管理员 Key、AWS 权限不足、账单延迟和缓存过期会明确显示，绝不把读取失败当作 0 元。
+## 三个选择
 
-## 当前运行控制
-
-| 选择 | 当前行为 |
-|---|---|
-| 本地运行 | 启动并检查 Home Assistant、Engine、Frigate、Mosquitto、Assistant 五个服务 |
-| 全部停止 | 在 `runtimeControlScope=local` 下只停止本地业务并确认停止 |
-| 云端运行 | 当前禁用；新版 AWS 迁移和验证尚未完成 |
-
-页面还提供 AI 助手暂停/恢复和父母会话控制，详见 [助手暂停说明](../../docs/assistant-pause.zh-CN.md)。
-
-以下跨环境切换、云端权限和 CloudWatch 记录描述旧版行为；当前本地作用域不会执行这些云端操作。
+| 选择 | 执行顺序 | 完成标准 |
+|---|---|---|
+| 云端运行 | 禁用本地三个业务容器的自动重启并停止 → Fargate 服务 desiredCount=1 | 本地停止；云端 Task、容器及音视频功能健康 |
+| 本地运行 | Fargate 服务 desiredCount=0 → 等待所有 Task 完全退出 → 启动本地三个容器 | 云端无运行、等待或退出中的 Task；本地 Home Assistant、Engine、Assistant 健康 |
+| 全部停止 | 尝试停止本地与云端，即使其中一边失败也继续处理另一边 | 两边均确认停止；无法连接不算停止成功 |
 
 点击即执行，选择写入 `local/host/runtime.json`，重启后保留。切换期间显示具体步骤，不允许并发切换或自动恢复干扰；切换失败不会自动退回原模式启动另一边。重试只需再点同一个按钮。重启打断切换时保留失败记录，必须在页面重试核验。
 
@@ -26,7 +20,7 @@
 
 首页先显示你的选择、实际运行位置、下一步；最近事件显示原因、已做的操作、复检结论和模型建议。底部展开技术证据，包含完整模型摘要、证据、建议和历史审计。状态失效会明确显示未知，不继续显示旧绿色。
 
-## 历史云端控制权限（新版迁移后重新验证）
+## 云端控制权限（一次性）
 
 AWS 只读身份不能执行启停。`local/aws-host.json` 的每个云端连接需设置 `controlProfile` 和 `allowRuntimeControl: true`。它们独立于故障自动替换所用的 `actionProfile/allowTaskReplacement`。宿主机配置及凭据不会发给浏览器或诊断模型。
 

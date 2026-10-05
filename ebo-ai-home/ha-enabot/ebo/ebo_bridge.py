@@ -319,7 +319,6 @@ class Bridge:
         self._last_rejoin = 0.0
         self._session_started_at = time.time()
         self._video_diag_thread = None
-        self._audio_obs = None
 
     # ---------------- Agora ----------------
 
@@ -414,15 +413,12 @@ class Bridge:
                     # closed until it receives OP_AUDIO_LISTEN again.
                     rtc_generation = self.rtc
                     observer_generation = self._audio_obs
-                    if observer_generation is not None:
-                        threading.Thread(
-                            target=self._recover_robot_audio,
-                            args=(str(uid), rtc_generation, observer_generation, _sub),
-                            name="audio-source-recovery",
-                            daemon=True,
-                        ).start()
-                    else:
-                        log("[audio-recovery] PCM observer unavailable; registration failed")
+                    threading.Thread(
+                        target=self._recover_robot_audio,
+                        args=(str(uid), rtc_generation, observer_generation, _sub),
+                        name="audio-source-recovery",
+                        daemon=True,
+                    ).start()
 
         bridge = self
 
@@ -552,15 +548,8 @@ class Bridge:
         # Register BEFORE connect. Agora attaches the remote-playback APM filter from its internal
         # on_user_audio_track_subscribed callback. Registering after connect races the robot's track
         # publication and intermittently misses the only event that installs that filter.
-        if self.audio_enabled or self.video_enabled:
+        if self.audio_enabled:
             self._register_audio_diag()
-        # connect() can synchronously announce an already-present robot. Its
-        # joined callback needs the CURRENT PCM observer, including on rejoin.
-        self._audio_obs = None
-        if self.video_enabled:
-            self._setup_video_pipeline()
-        elif self.audio_enabled:
-            self._register_audio_observer()
         self.rtc.connect(s["rtc_token"], s["rtc_channel"], s["rtc_uid"])
         for _ in range(20):
             if self.rtc_state:
@@ -650,24 +639,9 @@ class Bridge:
             return
 
         audio_health = self.audio_health
-        bridge, rtc = self, self.rtc
 
         class LUObs(IRTCLocalUserObserver):
             _stat_n = [0]
-            _video_stat_n = 0
-
-            def on_remote_video_track_statistics(o, lu, track, stats):
-                if bridge.rtc is not rtc or not bridge.video:
-                    return
-                keys = ("received_bitrate", "decoder_output_frame_rate", "renderer_output_frame_rate",
-                        "frame_loss_rate", "packet_loss_rate", "frozen_rate", "delay")
-                values = {k: int(getattr(stats, k, 0)) for k in keys}
-                values["observed_at"] = time.time()
-                with bridge.video.lock:
-                    bridge.video.remote_stats = values
-                o._video_stat_n += 1
-                if o._video_stat_n == 1 or o._video_stat_n % 15 == 0:
-                    log("[video-source]", json.dumps(values))
 
             def on_user_audio_track_subscribed(o, lu, user_id, track):
                 log("[audio-diag] subscribed to robot audio track uid=%s "
@@ -736,9 +710,6 @@ class Bridge:
                     # listen feed and (b) fire a false "audio works" from our own silence. So we
                     # take before-mix only, and only for the robot's uid.
                     try:
-                        if (o is not self._audio_obs or not self.connected or not self.listen_on
-                                or (self.robot_uid is not None and str(uid) != str(self.robot_uid))):
-                            return 0
                         audio_health.pcm()
                         o._n[0] += 1
                         if o._n[0] == 1:
@@ -749,13 +720,7 @@ class Bridge:
                             else:
                                 log("[audio] *** ROBOT MIC OPENED *** from %s "
                                     "(TX was OFF — self-open)" % uid)
-                        # Microphone capture is independent of first video frame,
-                        # FFmpeg/RTSP publishing, and the camera switch.
-                        server = getattr(self, '_pcm_server', None)
-                        if server is not None:
-                            server.broadcast_audio(frame.buffer)
-                        if pipeline is not None:
-                            pipeline.write_audio(frame.buffer)
+                        pipeline.write_audio(frame.buffer)
                     except Exception:
                         pass
                     return 0
@@ -819,7 +784,7 @@ class Bridge:
     def _start_audio_tx(self):
         """Publish our audio track and keep it alive so we can speak TO the robot ('talk').
         Started on demand when a 'talk' clip is queued; kept alive with silence between clips
-        (unpublishing/republishing per clip is slow). Independent of the camera switch."""
+        (unpublishing/republishing per clip is slow). Stopped when the camera turns off."""
         if not (self.audio_enabled or self.talk_enabled):
             return
         sender = getattr(self.rtc, "_audio_sender", None) if self.rtc else None
@@ -1037,7 +1002,6 @@ class Bridge:
         self._pcm_server = PcmTalkServer(
             "0.0.0.0", port, token, NODE,
             self._activate_pcm_stream, self._release_pcm_stream,
-            can_listen=lambda: self.connected and self.listen_on and self.audio_enabled,
         )
         self._pcm_server.start()
         log("[talk-stream] internal PCM WebSocket listening on :%d" % port)
@@ -1128,60 +1092,32 @@ class Bridge:
                 threading.Thread(target=self._tx_test_sequence, daemon=True).start()
         else:
             self.video.stop_feed()
+            self._stop_audio_tx()
             log("[video] OFF — camera stream stopped")
-
-    def _media_rejoin_reason(self, now):
-        """Video recovery must not tear down a verified healthy microphone."""
-        if not self.connected or now - self._session_started_at < 45:
-            return None
-        listening = self.audio_enabled and self.listen_on
-        audio_ok = self._microphone_healthy()
-        if listening:
-            return None if audio_ok else 'microphone source unavailable'
-        if self.video_on and self.video and not self.video.is_streaming(max_age=20):
-            return 'video source unavailable'
-        return None
-
-    def _microphone_healthy(self):
-        return self.audio_health.snapshot(self.listen_on, self.rtc_state == 'connected',
-                                          self.audio_enabled)['source_audio_ok']
 
     def _video_diag(self):
         """Nudge keyframes, re-wake, and warn if no decoded frames arrive."""
-        stalled_since = None
+        started = time.time()
         warned = False
-        request_failed = False
-        last_wake = time.monotonic()
+        last_wake = time.time()
         while not self.stop.is_set() and self.video and self.video.feeding:
-            now = time.monotonic()
-            if not self.video.is_streaming(max_age=3):
-                if stalled_since is None:
-                    stalled_since = now
-                if self.robot_uid and self.rtc:
+            if self.video.frames == 0:
+                if self.robot_uid:
                     try:
-                        result = self.rtc.send_intra_request(str(self.robot_uid))
-                        if result != 0 and not request_failed:
-                            log("[video-recovery] keyframe request failed: rc=%s" % result)
-                        request_failed = result != 0
-                    except Exception as exc:
-                        if not request_failed:
-                            log("[video-recovery] keyframe request failed:", exc)
-                        request_failed = True
-                # Recover a damaged decoder promptly without tearing down healthy
-                # microphone transport. Wake commands remain limited to 15s.
-                if self.connected and now - last_wake >= 15:
-                    last_wake = now
+                        self.rtc.send_intra_request(self.robot_uid)
+                    except Exception:
+                        pass
+                # the robot may still be waking from standby — re-send wake every ~8s
+                if time.time() - last_wake > 8:
+                    last_wake = time.time()
                     self._wake()
-                if not warned and now - stalled_since >= 20:
+                if not warned and time.time() - started > 20:
                     warned = True
-                    log("[video] ⚠ decoded video is stale — the robot may not be "
-                        "publishing, or the SDK isn't decoding. RTSP output is not source health.")
+                    log("[video] ⚠ still 0 decoded frames after 20s — the robot may not be "
+                        "publishing, or the SDK isn't decoding. RTSP is up but empty.")
+                self.stop.wait(1)
             else:
-                if warned:
-                    log("[video-recovery] fresh decoded frames resumed")
-                stalled_since = None
-                warned = request_failed = False
-            self.stop.wait(2)
+                self.stop.wait(8)
 
     def _check_sleep_on_dock(self):
         """After a 'dock' command: as soon as the robot is actually on the charger, leave the
@@ -1226,7 +1162,7 @@ class Bridge:
         try:
             if not self.connected:
                 self.set_connected(True)          # refreshes the cloud session on its own
-            elif not (self.video and self.video.is_streaming()) and not self._microphone_healthy():
+            elif not (self.video and self.video.is_streaming()):
                 self._force_rejoin()              # deep sleep: needs the fresh cloud session
         except Exception as e:
             log("[wake] rejoin after wake failed:", e)
@@ -1246,7 +1182,7 @@ class Bridge:
             streaming = bool(self.video and self.video.is_streaming())
             if not self.connected:
                 self.set_connected(True)
-            elif not streaming and not self._microphone_healthy():
+            elif not streaming:
                 self._force_rejoin()
             elif self.video and not self.video.feeding:
                 self._camera_feed(True)
@@ -2308,15 +2244,6 @@ class Bridge:
                 health["received_bitrate"], health["received_bytes"]))
             self._last_audio_health_status = health["status"]
 
-    def _publish_video_health(self):
-        if self.video:
-            health = self.video.health_snapshot(self.rtc_state == "connected", self.video_enabled)
-        else:
-            health = dict(observed_at=time.time(), status="disabled" if not self.video_enabled else "no_source_frames",
-                          source_video_ok=False, last_frame_at=0)
-        if self.mqtt:
-            self.mqtt.publish("%s/video_health" % NODE, json.dumps(health), retain=True)
-
     def _ui_load(self):
         try:
             with open(self._ui_path, encoding="utf-8") as f:
@@ -2453,20 +2380,20 @@ class Bridge:
                 if time.monotonic() - last_audio_health >= 5:
                     last_audio_health = time.monotonic()
                     self._publish_audio_health()
-                    self._publish_video_health()
+                if time.time() - last_check < 30:
+                    continue
+                last_check = time.time()
                 # Core media watchdog. This belongs in the EBO transport layer, not in the OpenAI
                 # assistant: any consumer (HA, Realtime, or a future plain camera adapter) should
                 # get the same self-healing RTSP source. Give a new session 45 seconds to publish,
                 # then rebuild at most once per 90 seconds while frames remain absent.
                 if time.time() - last_watchdog >= 10:
                     last_watchdog = time.time()
-                    reason = self._media_rejoin_reason(last_watchdog)
-                    if reason:
-                        log("[watchdog] %s after session grace; scheduling rejoin" % reason)
+                    if (self.connected and self.video_on and self.video
+                            and last_watchdog - self._session_started_at >= 45
+                            and not self.video.is_streaming(max_age=20)):
+                        log("[watchdog] no live video for 20s after session grace; scheduling rejoin")
                         self._force_rejoin()
-                if time.time() - last_check < 30:
-                    continue
-                last_check = time.time()
                 if self.connected and self.provider and not self._token_age_ok():
                     self.refresh_session()
                     # reconnect Agora with the new tokens

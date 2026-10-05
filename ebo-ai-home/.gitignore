@@ -33,6 +33,3 @@ docs/_bilingual_build/reference.docx
 docs/_bilingual_build/reference_render/
 docs/_bilingual_build/render_*/
 docs/_bilingual_build/figures/
-# Frigate local recognition library, database and model caches.
-frigate-data/
-frigate-media/

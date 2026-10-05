@@ -1,5 +1,7 @@
 # Incident Report: Real-time Assistant Robot Source Audio Outage
 
+> **Branch: `main` — the complete local/cloud + Diagnostic Agent edition.** The separate [Frigate edition](https://github.com/YeChen-coder/EBOBotToDigitalPet/tree/frigate) is not main; its unfinished AWS migration does not apply to this edition's existing AWS integration. [Version guide](../../../VERSION-GUIDE.md).
+
 ## Incident summary
 
 - Date: 2026-09-16

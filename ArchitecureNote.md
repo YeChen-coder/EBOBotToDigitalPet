@@ -1,3 +1,5 @@
+> **分支：`main`（完整本地／云端＋Diagnostic Agent 版）。** Frigate 版单独保留在 [`frigate`](https://github.com/YeChen-coder/EBOBotToDigitalPet/tree/frigate)，不是 main；其新版 AWS 待办不影响本分支已实现的 AWS 接入。[版本导航](VERSION-GUIDE.md)。
+
 这里面就是写一些我对于目前看到的东西的理解，辅助记忆。
 
 ---

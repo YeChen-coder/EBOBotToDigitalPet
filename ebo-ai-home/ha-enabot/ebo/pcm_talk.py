@@ -88,35 +88,28 @@ class PcmStream:
 class PcmTalkServer:
     """Small internal-only WebSocket server; Docker networking controls reachability."""
 
-    def __init__(self, host, port, token, node, on_activate, on_release, can_listen=None):
+    def __init__(self, host, port, token, node, on_activate, on_release):
         self.host = host
         self.port = int(port)
         self.token = token
         self.node = node
         self.on_activate = on_activate
         self.on_release = on_release
-        self.can_listen = can_listen or (lambda: True)
         self._active: PcmStream | None = None
         self._lock = threading.Lock()
         self._server = None
-        self._listeners = {}
-        self._stopping = threading.Event()
 
     def start(self) -> None:
         threading.Thread(target=self._run, name="pcm-talk-ws", daemon=True).start()
 
     def _run(self) -> None:
-        with serve(self._handle, self.host, self.port, close_timeout=1) as server:
+        with serve(self._handle, self.host, self.port) as server:
             self._server = server
             server.serve_forever()
 
     def stop(self) -> None:
-        self._stopping.set()
         with self._lock:
             active = self._active
-            listeners = list(self._listeners)
-        for websocket in listeners:
-            websocket.close(code=1001, reason="server shutdown")
         if active:
             active.stop("server_shutdown")
         if self._server:
@@ -139,80 +132,19 @@ class PcmTalkServer:
             message = json.loads(first)
         except (TypeError, json.JSONDecodeError):
             return False, {}
-        if not isinstance(message, dict):
-            return False, {}
         supplied = str(message.get("token", ""))
         valid = bool(self.token) and hmac.compare_digest(supplied, self.token)
         valid = valid and message.get("type") == "start"
         valid = valid and str(message.get("node", self.node)) == self.node
-        valid = valid and message.get("rate") == INPUT_RATE
-        valid = valid and message.get("channels") == 1
+        valid = valid and int(message.get("rate", 0)) == INPUT_RATE
+        valid = valid and int(message.get("channels", 0)) == 1
         valid = valid and str(message.get("format", "")) == "pcm16"
         return valid, message
-
-    def broadcast_audio(self, pcm: bytes) -> None:
-        """Fan out real microphone PCM without blocking the Agora callback.
-
-        A slow reader loses old audio; it never stalls another reader or video.
-        """
-        if not pcm or len(pcm) % 2:
-            return
-        item = (time.monotonic(), bytes(pcm))
-        with self._lock:
-            listeners = list(self._listeners.values())
-        for pending in listeners:
-            try:
-                pending.put_nowait(item)
-            except queue.Full:
-                try:
-                    pending.get_nowait()
-                except queue.Empty:
-                    pass
-                try:
-                    pending.put_nowait(item)
-                except queue.Full:
-                    pass
-
-    def _listen(self, websocket) -> None:
-        pending = queue.Queue(maxsize=20)
-        try:
-            valid, _ = self._authenticate(websocket.recv(timeout=10))
-            if not valid:
-                websocket.close(code=1008, reason="unauthorized")
-                return
-            with self._lock:
-                self._listeners[websocket] = pending
-            websocket.send(json.dumps({"type": "ready", "rate": INPUT_RATE,
-                                       "channels": 1, "format": "pcm16"}))
-            rate_state = None
-            while not self._stopping.is_set():
-                # Detect closed/idle clients even while the robot mic is muted.
-                try:
-                    control = websocket.recv(timeout=0)
-                    if control is not None:
-                        break
-                except TimeoutError:
-                    pass
-                try:
-                    stamp, pcm = pending.get(timeout=.5)
-                except queue.Empty:
-                    continue
-                if not self.can_listen() or time.monotonic() - stamp > .2:
-                    rate_state = None
-                    continue
-                converted, rate_state = audioop.ratecv(pcm, 2, 1, OUTPUT_RATE, INPUT_RATE, rate_state)
-                websocket.send(converted)
-        finally:
-            with self._lock:
-                self._listeners.pop(websocket, None)
 
     def _handle(self, websocket) -> None:
         stream = None
         try:
             request = getattr(websocket, "request", None)
-            if request is not None and getattr(request, "path", "") == "/listen":
-                self._listen(websocket)
-                return
             if request is not None and getattr(request, "path", "") != "/talk":
                 websocket.close(code=1008, reason="unknown endpoint")
                 return

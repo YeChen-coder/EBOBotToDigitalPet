@@ -3,8 +3,6 @@ import { now } from './common.mjs';
 export const runtimeModes = ['aws', 'local', 'stopped'];
 export const modeLabels = { aws: '云端运行', local: '本地运行', stopped: '全部停止' };
 export const runtimeErrors = {
-  cloud_upgrade_required: '云端仍是旧版助手。请先部署 Frigate、MQTT 和新会话框架，再开启云端运行。',
-  cloud_disabled: '当前只管理本地项目，云端运行尚未启用。',
   aws_action_not_configured: '尚未配置云端启停权限。请配置独立的 controlProfile 和 allowRuntimeControl。',
   aws_access_denied: 'AWS 拒绝了启停操作；控制身份需要指定 ECS 服务的 UpdateService 权限。',
   aws_credentials_unavailable: 'AWS 登录已过期或不可用；请在本机重新登录后重试。',
@@ -35,9 +33,6 @@ export class RuntimeControl {
     s.desired ??= config.runtimeEnvironment;
     if (!runtimeModes.includes(s.desired)) throw new Error('invalid_saved_runtime');
     s.phase ??= 'unmanaged'; s.history ??= [];
-    if (config.runtimeControlScope === 'local' && s.desired === 'aws') {
-      s.desired = 'stopped'; s.phase = 'unmanaged'; store.save();
-    }
     if (s.queuedMode === 'stopped') { s.desired = 'stopped'; delete s.queuedMode; s.phase = 'switching'; }
     if (s.phase === 'switching') { s.phase = 'failed'; s.error = 'runtime_interrupted'; store.save(); }
     this.sync();
@@ -45,7 +40,7 @@ export class RuntimeControl {
   sync() { this.config.runtimeEnvironment = this.store.value.desired; }
   status() {
     const s = this.store.value;
-    return { ...s, desired: s.queuedMode || s.desired, scope: this.config.runtimeControlScope === 'local' ? 'local' : 'all', controlVersion: 1, busy: this.busy || this.repairCount > 0, actual: this.actual, message: runtimeErrors[s.error] || null,
+    return { ...s, desired: s.queuedMode || s.desired, controlVersion: 1, busy: this.busy || this.repairCount > 0, actual: this.actual, message: runtimeErrors[s.error] || null,
       monitoringSuppressed: !!s.queuedMode || s.phase === 'switching' || (s.phase === 'failed' && s.error !== 'runtime_health_timeout') || s.desired === 'stopped' };
   }
   async observe() {
@@ -65,10 +60,6 @@ export class RuntimeControl {
   }
   request(desired, source = 'user') {
     if (!runtimeModes.includes(desired)) return { code: 400, body: { error: 'invalid_mode' } };
-    if (desired === 'aws' && this.config.runtimeControlScope === 'local') return { code: 409, body: { error: 'cloud_disabled', message: runtimeErrors.cloud_disabled } };
-    if (desired === 'aws' && this.config.requiredArchitecture && this.config.targets.some(t => t.adapter === 'aws-ecs' && t.architecture !== this.config.requiredArchitecture)) {
-      return { code: 409, body: { error: 'cloud_upgrade_required', message: runtimeErrors.cloud_upgrade_required } };
-    }
     if (desired === 'stopped' && (this.busy || this.repairCount)) {
       if (this.store.value.desired !== 'stopped') {
         this.store.value.queuedMode = 'stopped'; this.config.runtimeEnvironment = 'stopped'; this.store.save();
@@ -97,25 +88,23 @@ export class RuntimeControl {
       if (s.desired === 'stopped') {
         // Both stops must be attempted even if one side is unreachable.
         const errors = [];
-        const stops = [['停止本地业务容器', () => this.io.stopLocal()]];
-        if (this.config.runtimeControlScope !== 'local') stops.push(['云端任务数归零并等待停止', () => this.io.stopCloud()]);
-        for (const [label, fn] of stops) {
+        for (const [label, fn] of [['停止本地三个容器', () => this.io.stopLocal()], ['云端任务数归零并等待停止', () => this.io.stopCloud()]]) {
           try { await this.step(label, fn); } catch (e) { s.steps.at(-1).status = 'failed'; errors.push(e); }
         }
         if (errors.length) throw errors[0];
       } else if (s.desired === 'aws') {
-        await this.step('停止本地业务容器并关闭自动重启', () => this.io.stopLocal());
+        await this.step('停止本地三个容器并关闭自动重启', () => this.io.stopLocal());
         await this.step('启动云端 Fargate 服务', () => this.io.startCloud());
         await this.step('确认云端任务和音视频功能健康', () => this.io.waitHealthy('aws', health));
       } else {
-        if (this.config.runtimeControlScope !== 'local') await this.step('云端任务数归零并确认停止', () => this.io.stopCloud());
-        await this.step('启动本地业务容器', () => this.io.startLocal());
-        await this.step('确认 Home Assistant、Engine、Frigate、MQTT 和 Assistant 健康', () => this.io.waitHealthy('local', health));
+        await this.step('云端任务数归零并确认停止', () => this.io.stopCloud());
+        await this.step('启动本地三个容器', () => this.io.startLocal());
+        await this.step('确认 Home Assistant、Engine 和 Assistant 健康', () => this.io.waitHealthy('local', health));
       }
       await this.observe();
       if (!this.io.matches(s.desired, this.actual)) {
         if (s.desired !== 'local' && !this.actual?.local?.stopped) throw new Error('local_stop_unverified');
-        if (this.config.runtimeControlScope !== 'local' && s.desired !== 'aws' && !this.actual?.cloud?.stopped) throw new Error('aws_stop_unverified');
+        if (s.desired !== 'aws' && !this.actual?.cloud?.stopped) throw new Error('aws_stop_unverified');
         throw new Error('runtime_health_timeout');
       }
       s.phase = 'ready'; s.step = '目标状态已确认'; s.verifiedAt = this.clock();
@@ -135,18 +124,6 @@ export class RuntimeControl {
     this.busy = true; let restore = false;
     try {
       const s = this.store.value;
-      // A prior failed transition can be verified without repeating any lifecycle write.
-      // Keep the old failure in history and require both fresh inventory and functional health.
-      if (s.phase === 'failed' && !s.queuedMode && this.io.matches(s.desired, this.actual) &&
-          typeof this.io.checkHealthy === 'function') {
-        const healthy = s.desired === 'stopped' || await this.io.checkHealthy(s.desired);
-        await this.observe();
-        if (healthy && !s.queuedMode && this.io.matches(s.desired, this.actual)) {
-          Object.assign(s, {phase:'ready', error:null, step:'当前状态与功能已重新核验', verifiedAt:this.clock()});
-          s.history = [...s.history, {desired:s.desired,phase:'ready',source:'read_only_verification',error:null,at:this.clock(),steps:[]}].slice(-40);
-          this.store.save();
-        }
-      }
       // Keep intentional shutdown effective if an external tool starts the inactive side.
       // Importing old monitor configuration alone never authorizes a first lifecycle operation.
       if (s.phase !== 'unmanaged') {

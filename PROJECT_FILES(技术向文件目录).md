@@ -1,39 +1,40 @@
 # 项目代码与中英文文档 / Project and bilingual documents
 
-完整项目位于 [`ebo-ai-home/`](ebo-ai-home/)，包含语音助手、EBO Engine、Frigate/MQTT、Home Assistant、Diagnostic Agent、测试和部署脚本。根目录的 `README.md`、`README_zh.md` 是开发日记。
+**本目录对应 `main`：完整的本地／云端＋Diagnostic Agent 版本。** 项目源码在 [`ebo-ai-home/`](ebo-ai-home/)，根目录中英文 README 保留整个开发故事。[版本导航 / Version guide](VERSION-GUIDE.md)。
 
-The project lives in [`ebo-ai-home/`](ebo-ai-home/): the voice assistant, EBO Engine, Frigate/MQTT, Home Assistant, Diagnostic Agent, tests, and deployment scripts. Root `README.md` and `README_zh.md` are development journals.
+**This index describes `main`, the complete local/cloud + Diagnostic Agent edition.** Source lives in `ebo-ai-home`; the root Chinese and English READMEs retain the development story.
 
-## 最新技术介绍 / Current technical introductions
+## main：完整版本 / Complete edition
 
-**2026-10-03 · Frigate / `specter-ebo-v2`。** 中英文分开，每份包含 7 张图，简要介绍整体架构、语音流程、会话、身份与记忆、故障诊断、权限边界和 AWS 待办。
-
-**2026-10-03 · Frigate / `specter-ebo-v2`.** Separate Chinese and English editions, each with seven diagrams covering architecture, speech, sessions, identity and memory, diagnosis, permissions, and remaining AWS work.
-
-- [中文：新版技术介绍（7 张图）](ebo-ai-home/docs/TECHNICAL-INTRO.zh-CN.md)
-- [English: Current Technical Overview (7 diagrams)](ebo-ai-home/docs/TECHNICAL-INTRO.en.md)
-- [版本更新与 AWS 待办 / Release status and AWS work](ebo-ai-home/docs/RELEASE-2026-10-03.md)
-
-**新版 Diagnostic Dashboard 的 AWS 端尚未完成迁移与验证，当前默认只管理本地。** 旧版完整保留在 [`archive/pre-frigate-2026-10-03`](https://github.com/YeChen-coder/EBOBotToDigitalPet/tree/archive/pre-frigate-2026-10-03)。
-
-**The new Diagnostic Dashboard's AWS side is not migrated or validated; current runtime control defaults to local scope.** The previous version is preserved on the archive branch above.
-
-## 部署与诊断 / Setup and diagnostics
-
+- [中文技术介绍：本地、云端与 Diagnostic Agent（5 图）](ebo-ai-home/docs/COMPLETE-VERSION-INTRO.zh-CN.md)
+- [English: Local, Cloud and Diagnostic Agent (5 diagrams)](ebo-ai-home/docs/COMPLETE-VERSION-INTRO.en.md)
 - [中文本地部署说明](ebo-ai-home/README.zh-CN.md)
-- [English local setup](ebo-ai-home/README.md)
+- [English project overview and setup](ebo-ai-home/README.md)
 - [Diagnostic Agent 操作说明 / Operating guide, Chinese](ebo-ai-home/ops/diagnostics/README.zh-CN.md)
-- [中文：Diagnostic Agent 当前实现设计（Word）](ebo-ai-home/docs/Diagnostic_Agent_当前实现设计说明.docx)
-- [English: Diagnostic Agent Current Implementation Design (Word)](ebo-ai-home/docs/Diagnostic_Agent_Current_Implementation_Design.docx)
-- [中文：Host Bridge 权限分离设计（Word）](ebo-ai-home/docs/Diagnostic_Agent_HostBridge_权限分离设计详解.docx)
-- [English: Host Bridge Permission Separation Design (Word)](ebo-ai-home/docs/Diagnostic_Agent_HostBridge_Permission_Separation_Design_Guide.docx)
-- [公开副本与隐私说明 / Public snapshot and privacy](ebo-ai-home/PUBLIC_SNAPSHOT.md)
+- [Dashboard：本地／云端／停止 / Runtime control, Chinese](ebo-ai-home/ops/diagnostics/HEALTH-REPORT.zh-CN.md)
+- [AWS ECS/Fargate 接入 / Integration, Chinese](ebo-ai-home/ops/diagnostics/AWS.zh-CN.md)
+- [公开副本与隐私 / Public snapshot and privacy](ebo-ai-home/PUBLIC_SNAPSHOT.md)
 
-## 旧版深入参考 / Earlier detailed references
+本分支业务源码恢复自完整公开版本 `878696f`；云端运行、监控与切换需要配置自己的 AWS 服务和读取／控制权限。诊断服务和 Dashboard 仍在本地运行。
 
-- [中文版：架构与音视频技术详解（可编辑 Word）](ebo-ai-home/docs/EBO_架构与音视频技术详解_中文版.docx)
-- [English: Architecture and Media Technology (editable Word)](ebo-ai-home/docs/EBO_Architecture_and_Media_Technology_English.docx)
+Application source comes from the complete public version at `878696f`. Cloud operation and switching require your AWS services and reading/control permissions. Diagnostics and the Dashboard still run locally.
 
-这两份旧版 Word 各含 61 页、30 幅图解与 104 条参数说明，描述的是 2026-09-08 核对的实现。它们用于了解历史设计；当前 Frigate 架构、语音优先行为和 AWS 状态请先看上面的新版技术介绍。
+## frigate：独立的 Frigate 版，不是 main / Separate Frigate edition
 
-Each earlier Word edition contains 61 pages, 30 diagrams, and 104 parameter records for the implementation reviewed on 2026-09-08. Use them for historical detail; start with the current introductions for the Frigate architecture, audio-first behavior, and AWS status.
+分支：[`frigate`](https://github.com/YeChen-coder/EBOBotToDigitalPet/tree/frigate)。包含 Frigate/MQTT、新语音会话、身份与个人记忆，以及更新后的本地 Diagnostic Agent。**该分支新版 AWS Dashboard 尚未完成迁移或验证；这是 Frigate 版的边界。**
+
+The `frigate` branch contains Frigate/MQTT, new voice sessions, identity and personal memory, and updated local diagnostics. **Its new AWS Dashboard migration is unfinished.** This limitation belongs to that edition, not main's existing AWS integration.
+
+- [Frigate 中文技术介绍（7 图）](https://github.com/YeChen-coder/EBOBotToDigitalPet/blob/frigate/ebo-ai-home/docs/TECHNICAL-INTRO.zh-CN.md)
+- [Frigate English overview (7 diagrams)](https://github.com/YeChen-coder/EBOBotToDigitalPet/blob/frigate/ebo-ai-home/docs/TECHNICAL-INTRO.en.md)
+- [Frigate 详细文档目录 / Detailed document index](https://github.com/YeChen-coder/EBOBotToDigitalPet/blob/frigate/PROJECT_FILES%28%E6%8A%80%E6%9C%AF%E5%90%91%E6%96%87%E4%BB%B6%E7%9B%AE%E5%BD%95%29.md)
+- [Frigate 版本说明与 AWS 待办 / Release and AWS work](https://github.com/YeChen-coder/EBOBotToDigitalPet/blob/frigate/ebo-ai-home/docs/RELEASE-2026-10-03.md)
+
+## 历史深入参考 / Earlier detailed references
+
+- [中文：架构与音视频技术详解（Word）](ebo-ai-home/docs/EBO_架构与音视频技术详解_中文版.docx)
+- [English: Architecture and Media Technology (Word)](ebo-ai-home/docs/EBO_Architecture_and_Media_Technology_English.docx)
+
+这两份旧版 Word 各含 61 页、30 幅图解与 104 条参数说明，对应 2026-09-08 的基础实现。完整版本的诊断与 AWS 演进请结合上面的 main 技术介绍、操作文档和根目录开发日记阅读。
+
+Each earlier Word edition contains 61 pages, 30 diagrams and 104 parameter records for the base implementation reviewed on 2026-09-08. Use the main introductions, operating documentation and development journals above for subsequent diagnostics and AWS work.

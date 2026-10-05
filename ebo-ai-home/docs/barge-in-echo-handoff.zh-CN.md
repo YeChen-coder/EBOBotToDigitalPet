@@ -1,7 +1,9 @@
 # EBO 插话判断、回声处理与音频链路专项交接
 
+> **分支：`main`（完整本地／云端＋Diagnostic Agent 版）。** Frigate 版单独保留在 [`frigate`](https://github.com/YeChen-coder/EBOBotToDigitalPet/tree/frigate)，不是 main；其新版 AWS 待办不影响本分支已实现的 AWS 接入。[版本导航](../../VERSION-GUIDE.md)。
+
 > 更新时间：2026-09-02（America/Toronto）
-> 项目根目录：`<repository>`
+> 项目根目录：`C:\Projects\ebo-ai-home`
 > 当前 Git HEAD：`7e5f8f7 feat: support echo-aware barge-in`
 
 ## 1. 给下一位 ChatGPT/Codex 的任务
@@ -19,7 +21,7 @@
 
 ```text
 请阅读：
-<repository>\docs\barge-in-echo-handoff.zh-CN.md
+C:\Projects\ebo-ai-home\docs\barge-in-echo-handoff.zh-CN.md
 
 你在这个会话中只负责 EBO 的插话判断、声学回声处理和相关音频链路。
 先复核文档中的现场证据和代码，不要直接调一个阈值就宣布完成。
@@ -397,7 +399,7 @@ last_error
 容器日志：
 
 ```powershell
-cd <repository>
+cd C:\Projects\ebo-ai-home
 docker compose logs --since 2h --no-color realtime-assistant
 docker compose logs --since 2h --no-color ebo-engine
 ```
