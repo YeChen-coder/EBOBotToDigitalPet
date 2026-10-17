@@ -598,4 +598,4 @@ THE END ,  NEXT is https://github.com/YeChen-coder/EBOBotToDigitalPet/blob/main/
 
 没END, 这事还得干，给我搞得血压蹭蹭的。
 
-不过好处是，这两天在探索别的项目时，看到了国内千问的模型，9 月 20 号出的那个 Flash Speak-to-Speak。我觉得效果还真不错，自己测了一下确实挺好。而且考虑到时延的关系，我这个项目里 Speak-to-Speak 这块估计要转型了，反正得大改了
+不过好处是，这两天在探索别的项目时，看到了国内千问的模型，9 月 20 号出的那个 Flash Speak-to-Speak (https://www.qianwenai.com/models/qwen3.8-omni-flash-realtime)。我觉得效果还真不错，自己测了一下确实挺好。而且考虑到时延的关系，我这个项目里 Speak-to-Speak 这块估计要转型了，反正得大改了
