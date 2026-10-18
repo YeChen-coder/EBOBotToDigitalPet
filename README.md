@@ -162,7 +162,7 @@ The deployment was ready, but my family returned home early and heard the robot 
 
 After changing the prompt, the output became reliably Chinese. `./ebobot_catresponse.mp4` is a video recorded by my family. There are several seconds of latency between the speaker talking and the response arriving. Given that the network path crosses half the planet, the delay is understandable. Reducing it further would probably require substantial work.
 
-I also discovered that the Realtime API does not automatically retain conversation logs. At first, I assumed the usage section of the OpenAI API platform would contain them, so I did not design a separate logging system. Other models had exposed those logs, but Realtime did not. I initially blamed a delay; after two days with no Realtime API calls appearing on the platform, I realized the data was probably unavailable.
+I also discovered that the Realtime API does not automatically retain conversation logs. At first, I assumed the usage section of the OpenAI API platform would contain them, so I did not design a separate logging system. Other models had exposed those logs, but Realtime did not. I initially blamed a delay; after two days with no Realtime API calls appearing on the platform, I realized the data was probably unavailable. - An update from two months later: it can be logged after all. There's a parameter for it, and once you turn it on, the Realtime logs do show up on OpenAI's Developer Platform. I checked, they're really there. But honestly, even with it on, you're not going to look at them. The recordings are actually pretty good, audio included, but audio has such low information density. Really, really low. So even with logging on, I don't think anyone would go through it to debug. Still, better than nothing, so noting it here.
 
 Once a session ends, its spoken output cannot be retrieved either.
 
@@ -609,3 +609,65 @@ I agree that some engineering could address this problem, but that is not a grea
 ---
 
 THE END. Next: [The AWS migration and Diagnostic Agent journal](ShootToTheAWSCloud_en.md).
+
+---
+
+Not the END. This thing still needs work, and it's been sending my blood pressure through the roof.
+
+The upside: while poking around other projects these past few days, I came across Qwen's model from China, the Flash speech-to-speech one released on September 20 (https://www.qianwenai.com/models/qwen3.8-omni-flash-realtime).
+
+I think it's genuinely good. I tested it myself and it really holds up. And given the latency situation, the speech-to-speech part of this project is probably going to change direction. Either way, it's getting a big rewrite.
+
+---
+
+Time for an update.
+
+Two conclusions first:
+
+First: as of right now, October 17, 2026, Codex 6.1 So High is basically unusable. I honestly think I have a decent temper, and at least decent skills and patience when it comes to vibe coding. But every one of their models has gotten so dumbed down that it had me firing off three tweets in the middle of the night to rant about it.
+
+The good news is I've switched sides. I'm on Claude Opus 5.5 now, and wow, it's smart. It refactored the project, starting from the Frigate version.
+
+This refactor was mainly about two things:
+
+The first was switching models. A new model means I can finally do something about real-time responsiveness. The robot lives in China, half a planet away from me. I started with OpenAI's Realtime model, but there was no way it could run on my family's computer. Just thinking about the VPN situation gives me a headache, and after all kinds of experiments it was a firm no. After switching to Qwen, the response latency problem went away, because Qwen works directly in China. That means the whole program can now be deployed on my family's computer.
+
+That opens up a lot of things to play with. The quickest one to build was letting the program drive the robot to follow people. The logic itself isn't hard. I'm keeping the main branch because right now it's a complete story and works well on a résumé. But my own day-to-day program moved over to the Frigate setup a long time ago: run the video through Frigate first, then go through the whole MQTT thing. Then I had Claude Code refactor on top of the Frigate version (a branch of this repository).
+
+Then I added a really small person-detection model (about 28 MB total, I think? I forget what it's called, it's just the most common one). It can tell where a person is in the frame, and from that, whether they're close to the robot. If the person is far enough away that the robot won't bump into them, the program drives it toward them. I also added fallback logic, for example: if it has left the charging dock and hasn't seen anyone for 5 minutes, it goes back on its own. One more note: there's still a bit of a problem here. Vision models normally assume an undistorted image, but this little robot uses a fisheye lens. It's wide-angle.
+
+There are two ways to fix that:
+
+1. Two wrongs make a right, just tune the parameters:
+I simply tuned some parameters to fix the problem where it thought people were really close. They were actually pretty far away; the lens just made them look close. That's what I did, because it didn't seem worth the hassle.
+
+2. The more proper way:
+Use a black-and-white checkerboard (a calibration board) and do image processing to fully correct the distortion. It's actually simple, just a routine little operation in computer vision. It doesn't even need AI, it's plain image processing. But I couldn't be bothered, so I didn't do it.
+
+I ran into a few pitfalls along the way:
+
+1. Noise reduction and false triggers
+Qwen's Qwen3.8 Omni Flash Realtime doesn't come with noise reduction. I didn't know that at first. I assumed it had it built in like OpenAI Realtime, and right from the start it kept false-triggering, with the robot repeating the same sentence over and over. After digging in, I found that a home always has some TV sound or something falling on the floor, and any of those noises made it trigger again and again and start talking.
+
+Later I added two layers of filtering: first transcribe with Whisper, then use a cheap small model just to judge whether the transcribed text is my family talking or just TV noise. If it's my family talking, it opens a response and the conversation goes on normally. If not, it just ignores it. This part is working pretty well right now.
+
+2. Moving around and going back to charge
+This part is actually pretty specific. Once the robot has wheels, the problems are naturally the usual mechanical movement ones:
+
+• Not enough power to get off the dock: the charging dock isn't completely flat, it has a tiny slope. The robot needs a bit more force to drive off it. At first the power was set too low, there wasn't enough traction, and it just got stuck there. I turned the power up later.
+
+• A blind spot when finding the dock: the charging dock has to be at a certain angle to the little robot. Facing it head-on, the robot actually can't detect it. Before, the robot's motion control had a problem that kept the dock stuck right in front of it, and when the camera faces the dock directly, the dock falls right into the blind zone between the sensors on either side. It couldn't see the dock at all from the front, so it got stuck and couldn't find the charger. Later I fixed it by adjusting its rotation angle, so it doesn't just ram straight back and forth.
+
+That said, I'm still not totally sure about all this. It only went live yesterday, and this morning I found the crazy-repeating problem and frantically changed a bunch of stuff again, so it's run for a day at most. The program is still in heavy debugging, and for now it still runs on my machine so I can fix things anytime. In a few days, once the more obvious corner cases are cleared up, I'll deploy it for real on my family's computer, so testing and iterating can go faster after that.
+
+To monitor its health you still need a dashboard, so I actually reused some of the code from the dashboard I built before. I say reused, but basically the whole thing got refactored. The earlier work was still useful, though: at least it settled what information is actually worth showing, and then I had Claude Code rebuild it into a brand-new dashboard.
+
+But I'm not really sure how to upload this latest code. Another branch, I guess. Yes, really, just another branch. Otherwise it's layer upon layer and I've already confused myself. I'll keep this main as it is. Otherwise it'd be hard to write on my résumé, it'd overlap with my other projects, and it'd be hard to tell as one complete story. Anyway, that's how it is.
+
+Because honestly, I'm not really planning to put it on the cloud anymore. The cloud is just too expensive. AWS is SO expensive! And with latency on top of that, why bother with AWS? Why not just deploy it on my family's computer? It can be a bit more flexible and a bit smarter there, and react a bit faster when it turns, decides to follow someone, or adjusts its angle. So why spend all that money on the cloud? I still feel the pain of the money I spent on it. Wouldn't I rather spend that on tokens?
+
+One more thing. Now that it can move, going back to charge is actually something the manufacturer already built: send a command to EBO's cloud, and the robot heads back to the dock by itself once it gets it. That part obviously isn't mine. I really have no talent for maps. One look at a map and my head spins. If you asked me to build that, there's no way I could.
+
+Getting off track. What I wanted to say is that I added another small feature: if my family tells it things like "go back and charge" or "go charge now," there's a wake-word-like mechanism for that. Once it hears it, it automatically sends the command to the cloud so the robot goes back by itself. It's really simple, nothing deep or complicated AI-wise, just a bit of filtering. But it really is something my family asks the little robot to do.
+
+I compared it myself, and next to the manufacturer's latest flagship, what I'm still missing is navigation. Theirs is SLAM-based navigation, with map building, remembering the map and all that. Maps make me dizzy, so I probably can't do it. I'll let myself off the hook for now. Building maps, telling which part is the bedroom, the kitchen or the balcony: that's really not my job. I just can't do that one.
