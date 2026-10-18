@@ -671,3 +671,7 @@ One more thing. Now that it can move, going back to charge is actually something
 Getting off track. What I wanted to say is that I added another small feature: if my family tells it things like "go back and charge" or "go charge now," there's a wake-word-like mechanism for that. Once it hears it, it automatically sends the command to the cloud so the robot goes back by itself. It's really simple, nothing deep or complicated AI-wise, just a bit of filtering. But it really is something my family asks the little robot to do.
 
 I compared it myself, and next to the manufacturer's latest flagship, what I'm still missing is navigation. Theirs is SLAM-based navigation, with map building, remembering the map and all that. Maps make me dizzy, so I probably can't do it. I'll let myself off the hook for now. Building maps, telling which part is the bedroom, the kitchen or the balcony: that's really not my job. I just can't do that one.
+
+---
+
+Please note: because the author is currently working on the V3 version, the continuing development log and all the notes shall be in here: https://github.com/YeChen-coder/EBOBotQwenRealtime/blob/main/README.md
