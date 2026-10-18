@@ -1,6 +1,7 @@
 # Turning an EBO Bot into an AI Companion — Development Journal
 
 > **Branch: `main` — the complete local/cloud + Diagnostic Agent edition.** The separate [Frigate edition](https://github.com/YeChen-coder/EBOBotToDigitalPet/tree/frigate) is not main; its unfinished AWS migration does not apply to this edition's existing AWS integration. [Version guide](VERSION-GUIDE.md).
+> **New: [v3 — EBOBotQwenRealtime](https://github.com/YeChen-coder/EBOBotQwenRealtime)** is a separate local-only refactor on Qwen Realtime in which the robot actually moves. It does not replace this edition.
 
 [Chinese version](README_zh.md)
 

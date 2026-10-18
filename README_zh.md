@@ -1,4 +1,5 @@
 > **分支：`main`（完整本地／云端＋Diagnostic Agent 版）。** Frigate 版单独保留在 [`frigate`](https://github.com/YeChen-coder/EBOBotToDigitalPet/tree/frigate)，不是 main；其新版 AWS 待办不影响本分支已实现的 AWS 接入。[版本导航](VERSION-GUIDE.md)。
+> **新：[v3 — EBOBotQwenRealtime](https://github.com/YeChen-coder/EBOBotQwenRealtime)** 是单独开仓库的第三代重构（通义千问 Realtime、只跑本地、机器人终于会动了），不替代本版本。
 
 
 技术向项目介绍和架构 在 https://github.com/YeChen-coder/EBOBotToDigitalPet/blob/main/ebo-ai-home/README.zh-CN.md 里，这篇文档更像是一个开发/吐槽/踩坑 日志。
